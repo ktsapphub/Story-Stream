@@ -138,11 +138,17 @@
 ---
 
 ## 3. Next Actions
-1. Run Phase 1 web research for emergentintegrations + Nano Banana patterns.
-2. Implement `test_core.py` and iterate until all acceptance checks pass.
-3. After POC success, implement Phase 2 V1 backend+frontend in one cohesive build.
-4. Execute V1 end-to-end tests and fix until stable.
-5. Ask for approval before adding auth (Phase 3), since it can slow testing.
+1. ~~Run Phase 1 web research for emergentintegrations + Nano Banana patterns.~~ DONE
+2. ~~Implement `test_core.py` and iterate until all acceptance checks pass.~~ DONE (7/7 passed)
+3. ~~After POC success, implement Phase 2 V1 backend+frontend in one cohesive build.~~ DONE
+4. Execute V1 end-to-end tests and fix until stable. (IN PROGRESS)
+5. Ask for approval before adding auth (Phase 3).
+
+## STATUS LOG
+- Phase 1 POC: COMPLETE — multi-provider text (gpt-5, claude-sonnet-4-6, gemini-2.5-pro), batch 5 concurrent, Nano Banana image (gemini-3.1-flash-image-preview), quality scoring, blog->newsletter transform all verified.
+- Phase 2 Backend: COMPLETE — generation (single/batch jobs), scoring, newsletter (from-blog + prompt), media (upload/url/generate + object storage serving), knowledge base (url scrape + doc extract + LLM analysis), content CRUD, exports (HTML/MD/WP/CSV/PDF/TXT all verified), stats.
+- Phase 2 Frontend: COMPLETE — AppShell, Dashboard, BlogStudio (compose/batch/editor/score/media/export/convert), NewsletterStudio, ContentLibrary, MediaLibrary, KnowledgeBase. Warm My Date Jar design applied. Lint clean, compiles.
+- NEXT: testing_agent_v3 end-to-end, then offer Phase 3 (auth).
 
 ---
 

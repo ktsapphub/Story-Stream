@@ -1,72 +1,613 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, UploadFile, File, Form, HTTPException, Query
+from fastapi.responses import Response
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
-from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+import asyncio
 import uuid
+import base64
+from pathlib import Path
+from pydantic import BaseModel, Field
+from typing import List, Optional
 from datetime import datetime, timezone
-
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+import storage as storage_mod
+import llm_service as llm
+import knowledge as kb
+import exporters
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
-app = FastAPI()
-
-# Create a router with the /api prefix
+app = FastAPI(title="Content Studio API")
 api_router = APIRouter(prefix="/api")
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
 
-# Add your routes to the router instead of directly to app
+
+def clean(doc):
+    if not doc:
+        return doc
+    doc.pop("_id", None)
+    return doc
+
+
+# ----------------------- Models -----------------------
+class GenerateBlogRequest(BaseModel):
+    topic: str
+    model_key: str = llm.DEFAULT_MODEL
+    tone: str = "warm and engaging"
+    length: str = "medium"
+    reference_source_ids: List[str] = []
+    save: bool = True
+
+
+class BatchRequest(BaseModel):
+    topics: List[str]
+    model_key: str = llm.DEFAULT_MODEL
+    tone: str = "warm and engaging"
+    length: str = "medium"
+    reference_source_ids: List[str] = []
+
+
+class ScoreRequest(BaseModel):
+    content_id: Optional[str] = None
+    title: Optional[str] = None
+    body: Optional[str] = None
+    model_key: str = llm.DEFAULT_MODEL
+
+
+class NewsletterFromBlogRequest(BaseModel):
+    blog_content_id: str
+    model_key: str = llm.DEFAULT_MODEL
+    save: bool = True
+
+
+class NewsletterFromPromptRequest(BaseModel):
+    topic: str
+    model_key: str = llm.DEFAULT_MODEL
+    tone: str = "warm and engaging"
+    reference_source_ids: List[str] = []
+    save: bool = True
+
+
+class GenerateImageRequest(BaseModel):
+    prompt: str
+    content_id: Optional[str] = None
+    as_header: bool = False
+    title: Optional[str] = None
+
+
+class MediaFromUrlRequest(BaseModel):
+    url: str
+    title: Optional[str] = None
+    media_type: Optional[str] = None
+
+
+class KnowledgeUrlRequest(BaseModel):
+    url: str
+
+
+class SaveContentRequest(BaseModel):
+    id: Optional[str] = None
+    type: str = "blog"
+    title: str = ""
+    slug: str = ""
+    meta_description: str = ""
+    tags: List[str] = []
+    excerpt: str = ""
+    body_markdown: str = ""
+    image_prompts: List[str] = []
+    header_image: Optional[dict] = None
+    inline_media: List[dict] = []
+    newsletter: Optional[dict] = None
+    status: str = "draft"
+    model_used: Optional[str] = None
+    quality_score: Optional[dict] = None
+    source_blog_id: Optional[str] = None
+
+
+# ----------------------- Helpers -----------------------
+async def build_reference_context(source_ids: List[str]) -> str:
+    if not source_ids:
+        return ""
+    docs = await db.knowledge.find({"id": {"$in": source_ids}, "is_deleted": {"$ne": True}}, {"_id": 0}).to_list(50)
+    parts = []
+    for d in docs:
+        title = d.get("title", "")
+        summary = d.get("summary", "")
+        content = d.get("content", "")
+        parts.append(f"SOURCE: {title}\nSUMMARY: {summary}\nCONTENT:\n{content[:3000]}")
+    return "\n\n---\n\n".join(parts)
+
+
+def make_content_doc(data: dict, ctype: str, model_key: str) -> dict:
+    return {
+        "id": str(uuid.uuid4()),
+        "type": ctype,
+        "title": data.get("title", ""),
+        "slug": data.get("slug", ""),
+        "meta_description": data.get("meta_description", ""),
+        "tags": data.get("tags", []) or [],
+        "excerpt": data.get("excerpt", ""),
+        "body_markdown": data.get("body_markdown", ""),
+        "image_prompts": data.get("image_prompts", []) or [],
+        "header_image": data.get("header_image"),
+        "inline_media": data.get("inline_media", []) or [],
+        "newsletter": data.get("newsletter"),
+        "status": "draft",
+        "model_used": model_key,
+        "quality_score": data.get("quality_score"),
+        "source_blog_id": data.get("source_blog_id"),
+        "is_deleted": False,
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+
+
+async def store_image_bytes(img_bytes: bytes, ext: str, mime: str, source: str, prompt: str = "") -> dict:
+    path = f"{storage_mod.APP_NAME}/media/{uuid.uuid4()}.{ext}"
+    result = await asyncio.to_thread(storage_mod.put_object, path, img_bytes, mime)
+    stored_path = result["path"]
+    media = {
+        "id": str(uuid.uuid4()),
+        "storage_path": stored_path,
+        "url": f"/api/files/{stored_path}",
+        "original_filename": f"{source}.{ext}",
+        "content_type": mime,
+        "size": result.get("size", len(img_bytes)),
+        "media_type": "image",
+        "source": source,
+        "prompt": prompt,
+        "external_url": None,
+        "is_deleted": False,
+        "created_at": now_iso(),
+    }
+    await db.media.insert_one(dict(media))
+    return clean(media)
+
+
+# ----------------------- Routes: meta -----------------------
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Content Studio API", "status": "ok"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
+@api_router.get("/models")
+async def get_models():
+    return {"models": llm.list_models(), "default": llm.DEFAULT_MODEL}
 
-# Include the router in the main app
+
+# ----------------------- Routes: generation -----------------------
+@api_router.post("/generate/blog")
+async def generate_blog(req: GenerateBlogRequest):
+    try:
+        ref = await build_reference_context(req.reference_source_ids)
+        data = await llm.generate_blog(req.topic, req.model_key, req.tone, req.length, ref)
+    except Exception as e:
+        logger.exception("blog generation failed")
+        raise HTTPException(status_code=500, detail=f"Generation failed: {e}")
+    doc = make_content_doc(data, "blog", req.model_key)
+    if req.save:
+        await db.content.insert_one(dict(doc))
+    return clean(doc)
+
+
+@api_router.post("/generate/blog/batch")
+async def generate_blog_batch(req: BatchRequest):
+    topics = [t for t in req.topics if t and t.strip()][:10]
+    if not topics:
+        raise HTTPException(status_code=400, detail="Provide at least one topic")
+    job_id = str(uuid.uuid4())
+    job = {
+        "id": job_id,
+        "status": "running",
+        "total": len(topics),
+        "completed": 0,
+        "model_key": req.model_key,
+        "items": [{"index": i, "topic": t, "status": "queued", "content_id": None, "title": None, "error": None}
+                  for i, t in enumerate(topics)],
+        "created_at": now_iso(),
+    }
+    await db.jobs.insert_one(dict(job))
+
+    async def run():
+        ref = await build_reference_context(req.reference_source_ids)
+
+        async def on_item(idx, result, exc):
+            if exc is not None:
+                update = {f"items.{idx}.status": "failed", f"items.{idx}.error": str(exc)[:200]}
+            else:
+                doc = make_content_doc(result, "blog", req.model_key)
+                await db.content.insert_one(dict(doc))
+                update = {
+                    f"items.{idx}.status": "complete",
+                    f"items.{idx}.content_id": doc["id"],
+                    f"items.{idx}.title": doc["title"],
+                }
+            await db.jobs.update_one({"id": job_id}, {"$set": update, "$inc": {"completed": 1}})
+
+        await db.jobs.update_one({"id": job_id}, {"$set": {f"items.{i}.status": "generating" for i in range(len(topics))}})
+        try:
+            await llm.generate_blog_batch(topics, req.model_key, req.tone, req.length, ref, concurrency=5, on_item=on_item)
+        finally:
+            await db.jobs.update_one({"id": job_id}, {"$set": {"status": "done"}})
+
+    asyncio.create_task(run())
+    return clean(job)
+
+
+@api_router.get("/jobs/{job_id}")
+async def get_job(job_id: str):
+    job = await db.jobs.find_one({"id": job_id}, {"_id": 0})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
+@api_router.post("/score")
+async def score(req: ScoreRequest):
+    title, body = req.title, req.body
+    if req.content_id:
+        content = await db.content.find_one({"id": req.content_id}, {"_id": 0})
+        if not content:
+            raise HTTPException(status_code=404, detail="Content not found")
+        title = content.get("title", "")
+        if content.get("type") == "newsletter" and content.get("newsletter"):
+            body = exporters.content_to_markdown(content)
+        else:
+            body = content.get("body_markdown", "")
+    if not body:
+        raise HTTPException(status_code=400, detail="No content to score")
+    try:
+        result = await llm.score_content(title or "", body, req.model_key)
+    except Exception as e:
+        logger.exception("scoring failed")
+        raise HTTPException(status_code=500, detail=f"Scoring failed: {e}")
+    if req.content_id:
+        await db.content.update_one({"id": req.content_id}, {"$set": {"quality_score": result, "updated_at": now_iso()}})
+    return result
+
+
+@api_router.post("/generate/newsletter/from-blog")
+async def newsletter_from_blog(req: NewsletterFromBlogRequest):
+    blog = await db.content.find_one({"id": req.blog_content_id}, {"_id": 0})
+    if not blog:
+        raise HTTPException(status_code=404, detail="Blog not found")
+    try:
+        nl = await llm.transform_to_newsletter(blog, req.model_key)
+    except Exception as e:
+        logger.exception("newsletter transform failed")
+        raise HTTPException(status_code=500, detail=f"Transform failed: {e}")
+    doc = make_content_doc({
+        "title": nl.get("subject", blog.get("title", "")),
+        "excerpt": blog.get("excerpt", ""),
+        "newsletter": nl,
+        "header_image": blog.get("header_image"),
+        "source_blog_id": blog["id"],
+        "tags": blog.get("tags", []),
+    }, "newsletter", req.model_key)
+    if req.save:
+        await db.content.insert_one(dict(doc))
+    return clean(doc)
+
+
+@api_router.post("/generate/newsletter")
+async def newsletter_from_prompt(req: NewsletterFromPromptRequest):
+    try:
+        ref = await build_reference_context(req.reference_source_ids)
+        nl = await llm.generate_newsletter(req.topic, req.model_key, req.tone, ref)
+    except Exception as e:
+        logger.exception("newsletter generation failed")
+        raise HTTPException(status_code=500, detail=f"Generation failed: {e}")
+    doc = make_content_doc({
+        "title": nl.get("title", nl.get("subject", "")),
+        "excerpt": nl.get("excerpt", ""),
+        "newsletter": nl,
+    }, "newsletter", req.model_key)
+    if req.save:
+        await db.content.insert_one(dict(doc))
+    return clean(doc)
+
+
+@api_router.post("/generate/image")
+async def generate_image(req: GenerateImageRequest):
+    try:
+        img = await llm.generate_image(req.prompt)
+    except Exception as e:
+        logger.exception("image generation failed")
+        raise HTTPException(status_code=500, detail=f"Image generation failed: {e}")
+    media = await store_image_bytes(img["bytes"], img["ext"], img["mime_type"], "generated", req.prompt)
+    if req.content_id and req.as_header:
+        await db.content.update_one(
+            {"id": req.content_id},
+            {"$set": {"header_image": {"media_id": media["id"], "url": media["url"]}, "updated_at": now_iso()}},
+        )
+    return media
+
+
+# ----------------------- Routes: media -----------------------
+@api_router.post("/media/upload")
+async def media_upload(file: UploadFile = File(...), title: str = Form(None)):
+    data = await file.read()
+    if len(data) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 50MB)")
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "bin"
+    ct = file.content_type or storage_mod.MIME_TYPES.get(ext, "application/octet-stream")
+    path = f"{storage_mod.APP_NAME}/media/{uuid.uuid4()}.{ext}"
+    try:
+        result = await asyncio.to_thread(storage_mod.put_object, path, data, ct)
+    except Exception as e:
+        logger.exception("upload failed")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
+    stored_path = result["path"]
+    media = {
+        "id": str(uuid.uuid4()),
+        "storage_path": stored_path,
+        "url": f"/api/files/{stored_path}",
+        "original_filename": file.filename,
+        "content_type": ct,
+        "size": result.get("size", len(data)),
+        "media_type": storage_mod.guess_media_type(ct, ext),
+        "source": "upload",
+        "prompt": title or "",
+        "external_url": None,
+        "is_deleted": False,
+        "created_at": now_iso(),
+    }
+    await db.media.insert_one(dict(media))
+    return clean(media)
+
+
+@api_router.post("/media/from-url")
+async def media_from_url(req: MediaFromUrlRequest):
+    url = req.url.strip()
+    mtype = req.media_type
+    if not mtype:
+        low = url.lower()
+        if "youtube.com" in low or "youtu.be" in low:
+            mtype = "video"
+        elif low.endswith(".gif") or "giphy.com" in low:
+            mtype = "gif"
+        elif any(low.endswith(e) for e in (".mp4", ".webm", ".mov")):
+            mtype = "video"
+        else:
+            mtype = "image"
+    media = {
+        "id": str(uuid.uuid4()),
+        "storage_path": None,
+        "url": url,
+        "original_filename": req.title or url,
+        "content_type": None,
+        "size": 0,
+        "media_type": mtype,
+        "source": "url",
+        "prompt": req.title or "",
+        "external_url": url,
+        "is_deleted": False,
+        "created_at": now_iso(),
+    }
+    await db.media.insert_one(dict(media))
+    return clean(media)
+
+
+@api_router.get("/media")
+async def list_media(media_type: Optional[str] = None):
+    q = {"is_deleted": {"$ne": True}}
+    if media_type and media_type != "all":
+        q["media_type"] = media_type
+    items = await db.media.find(q, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return items
+
+
+@api_router.delete("/media/{media_id}")
+async def delete_media(media_id: str):
+    await db.media.update_one({"id": media_id}, {"$set": {"is_deleted": True}})
+    return {"ok": True}
+
+
+@api_router.get("/files/{path:path}")
+async def serve_file(path: str):
+    record = await db.media.find_one({"storage_path": path, "is_deleted": {"$ne": True}}, {"_id": 0})
+    try:
+        data, content_type = await asyncio.to_thread(storage_mod.get_object, path)
+    except Exception:
+        raise HTTPException(status_code=404, detail="File not found")
+    ct = (record or {}).get("content_type") or content_type
+    return Response(content=data, media_type=ct, headers={"Cache-Control": "public, max-age=86400"})
+
+
+# ----------------------- Routes: knowledge base -----------------------
+@api_router.post("/knowledge/url")
+async def knowledge_add_url(req: KnowledgeUrlRequest):
+    try:
+        scraped = await asyncio.to_thread(kb.scrape_url, req.url)
+    except Exception as e:
+        logger.exception("scrape failed")
+        raise HTTPException(status_code=400, detail=f"Could not fetch URL: {e}")
+    analysis = await llm.summarize_source(scraped["content"])
+    doc = {
+        "id": str(uuid.uuid4()),
+        "type": "url",
+        "title": scraped["title"],
+        "source_url": req.url,
+        "original_filename": None,
+        "content": scraped["content"],
+        "summary": analysis.get("summary", ""),
+        "topics": analysis.get("topics", []),
+        "tone": analysis.get("tone", ""),
+        "status": "ready",
+        "is_deleted": False,
+        "created_at": now_iso(),
+    }
+    await db.knowledge.insert_one(dict(doc))
+    return clean(doc)
+
+
+@api_router.post("/knowledge/upload")
+async def knowledge_upload(file: UploadFile = File(...)):
+    data = await file.read()
+    text = await asyncio.to_thread(kb.extract_document, file.filename, data)
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Could not extract text from document")
+    analysis = await llm.summarize_source(text)
+    doc = {
+        "id": str(uuid.uuid4()),
+        "type": "document",
+        "title": file.filename,
+        "source_url": None,
+        "original_filename": file.filename,
+        "content": text,
+        "summary": analysis.get("summary", ""),
+        "topics": analysis.get("topics", []),
+        "tone": analysis.get("tone", ""),
+        "status": "ready",
+        "is_deleted": False,
+        "created_at": now_iso(),
+    }
+    await db.knowledge.insert_one(dict(doc))
+    return clean(doc)
+
+
+@api_router.get("/knowledge")
+async def list_knowledge():
+    items = await db.knowledge.find({"is_deleted": {"$ne": True}}, {"_id": 0, "content": 0}).sort("created_at", -1).to_list(500)
+    return items
+
+
+@api_router.get("/knowledge/{source_id}")
+async def get_knowledge(source_id: str):
+    doc = await db.knowledge.find_one({"id": source_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Source not found")
+    return doc
+
+
+@api_router.delete("/knowledge/{source_id}")
+async def delete_knowledge(source_id: str):
+    await db.knowledge.update_one({"id": source_id}, {"$set": {"is_deleted": True}})
+    return {"ok": True}
+
+
+# ----------------------- Routes: content CRUD -----------------------
+@api_router.get("/content")
+async def list_content(type: Optional[str] = None, status: Optional[str] = None):
+    q = {"is_deleted": {"$ne": True}}
+    if type and type != "all":
+        q["type"] = type
+    if status and status != "all":
+        q["status"] = status
+    items = await db.content.find(q, {"_id": 0}).sort("updated_at", -1).to_list(1000)
+    return items
+
+
+@api_router.get("/content/{content_id}")
+async def get_content(content_id: str):
+    doc = await db.content.find_one({"id": content_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Content not found")
+    return doc
+
+
+@api_router.post("/content")
+async def save_content(req: SaveContentRequest):
+    payload = req.model_dump()
+    cid = payload.get("id")
+    if cid:
+        existing = await db.content.find_one({"id": cid})
+        if existing:
+            payload["updated_at"] = now_iso()
+            payload.pop("id", None)
+            await db.content.update_one({"id": cid}, {"$set": payload})
+            return await db.content.find_one({"id": cid}, {"_id": 0})
+    doc = {
+        **payload,
+        "id": str(uuid.uuid4()),
+        "is_deleted": False,
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+    await db.content.insert_one(dict(doc))
+    return clean(doc)
+
+
+@api_router.put("/content/{content_id}")
+async def update_content(content_id: str, req: SaveContentRequest):
+    existing = await db.content.find_one({"id": content_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Content not found")
+    payload = req.model_dump()
+    payload.pop("id", None)
+    payload["updated_at"] = now_iso()
+    await db.content.update_one({"id": content_id}, {"$set": payload})
+    return await db.content.find_one({"id": content_id}, {"_id": 0})
+
+
+@api_router.post("/content/{content_id}/status")
+async def set_status(content_id: str, status: str = Query(...)):
+    await db.content.update_one({"id": content_id}, {"$set": {"status": status, "updated_at": now_iso()}})
+    return {"ok": True}
+
+
+@api_router.delete("/content/{content_id}")
+async def delete_content(content_id: str):
+    await db.content.update_one({"id": content_id}, {"$set": {"is_deleted": True}})
+    return {"ok": True}
+
+
+# ----------------------- Routes: export -----------------------
+@api_router.get("/export/{content_id}")
+async def export(content_id: str, format: str = Query("html")):
+    content = await db.content.find_one({"id": content_id}, {"_id": 0})
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+    try:
+        data, content_type, ext = exporters.export_content(content, format)
+    except Exception as e:
+        logger.exception("export failed")
+        raise HTTPException(status_code=500, detail=f"Export failed: {e}")
+    slug = content.get("slug") or content.get("title", "content")
+    safe = "".join(c if c.isalnum() or c in "-_" else "-" for c in (slug or "content"))[:60] or "content"
+    filename = f"{safe}.{ext}"
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ----------------------- Routes: dashboard stats -----------------------
+@api_router.get("/stats")
+async def stats():
+    base = {"is_deleted": {"$ne": True}}
+    blogs = await db.content.count_documents({**base, "type": "blog"})
+    newsletters = await db.content.count_documents({**base, "type": "newsletter"})
+    published = await db.content.count_documents({**base, "status": "published"})
+    media_count = await db.media.count_documents({"is_deleted": {"$ne": True}})
+    sources = await db.knowledge.count_documents({"is_deleted": {"$ne": True}})
+    scored = await db.content.find({**base, "quality_score": {"$ne": None}}, {"_id": 0, "quality_score": 1}).to_list(1000)
+    avg = 0
+    if scored:
+        vals = [s["quality_score"].get("overall_score", 0) for s in scored if s.get("quality_score")]
+        avg = round(sum(vals) / len(vals)) if vals else 0
+    return {
+        "blogs": blogs, "newsletters": newsletters, "published": published,
+        "media": media_count, "sources": sources, "avg_score": avg,
+    }
+
+
 app.include_router(api_router)
 
 app.add_middleware(
@@ -77,12 +618,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+
+@app.on_event("startup")
+async def on_startup():
+    try:
+        await asyncio.to_thread(storage_mod.init_storage)
+        logger.info("Storage initialized at startup")
+    except Exception as e:
+        logger.error(f"Storage init failed: {e}")
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

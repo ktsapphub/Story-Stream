@@ -1,31 +1,23 @@
 [
   {
-    "content": "Phase 1: Get integration playbook for emergentintegrations (multi-provider LLM text + Nano Banana image)",
+    "content": "Phase 1: POC core integrations (7/7 PASSED)",
     "status": "completed"
   },
   {
-    "content": "Phase 1: Write test_core.py covering text gen (3 providers), batch 5, Nano Banana image, quality scoring, blog->newsletter transform",
+    "content": "Phase 2: Get object storage playbook + design guidelines",
     "status": "completed"
-  },
-  {
-    "content": "Phase 1: Run POC and fix until all core integrations pass (7/7 PASSED)",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: Get object storage playbook (media/doc uploads) + design guidelines",
-    "status": "in_progress"
   },
   {
     "content": "Phase 2: Build backend (generation, batch, scoring, media, knowledge base, exports)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 2: Build frontend (Blog Studio, Newsletter Studio, Media Library, Knowledge Base, Content Library, exports)",
-    "status": "pending"
+    "status": "completed"
   },
   {
-    "content": "Phase 2: End-to-end testing with testing_agent_v3",
-    "status": "pending"
+    "content": "Phase 2: End-to-end testing with testing_agent_v3 (backend + frontend)",
+    "status": "in_progress"
   },
   {
     "content": "Phase 3: Add auth (email/password JWT) + content library polish",
