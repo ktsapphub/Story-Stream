@@ -1,573 +1,500 @@
 {
-  "product": {
-    "name": "Content Studio (My Date Jar)",
-    "type": "creator SaaS dashboard / content workspace",
-    "brand_attributes": [
-      "warm",
-      "romantic",
-      "playful-but-professional",
-      "premium",
-      "delightful",
-      "editorial"
-    ],
-    "north_star": "A cozy, premium creative workspace that feels like planning a perfect date night—calm surfaces, warm accents, and confident AI assistance."
-  },
-
+  "design_system_name": "My Date Jar — Content Studio Refresh (Modern Warm + High Contrast)",
   "visual_personality": {
-    "style_fusion": [
-      "Editorial workspace (Notion-like calm reading surfaces)",
-      "Warm lifestyle brand (soft photography + caramel/rose accents)",
-      "Bento dashboard layout (quick actions + progress + library)",
-      "Soft glass accents (only for hero/headers, <=20% viewport)"
+    "brand_attributes": [
+      "warm + romantic (My Date Jar)",
+      "modern creator-tool clarity (crisp surfaces)",
+      "playful but not childish (confident accents)",
+      "high-contrast, scannable, color-coded"
     ],
-    "do_not": [
-      "Cold dev-tool look",
-      "Purple gradients",
-      "Overly saturated neon",
-      "Center-aligned app container",
-      "Dense cramped spacing"
-    ]
-  },
-
-  "design_tokens": {
-    "css_custom_properties": {
-      "notes": [
-        "Implement by replacing :root tokens in /app/frontend/src/index.css.",
-        "Primary theme is light; dark theme can remain but should be warmed later.",
-        "All colors below are warm + premium; avoid harsh contrast except for text."
-      ],
-      "light": {
-        "--background": "32 45% 98%",
-        "--foreground": "24 22% 12%",
-
-        "--card": "30 40% 99%",
-        "--card-foreground": "24 22% 12%",
-
-        "--popover": "30 40% 99%",
-        "--popover-foreground": "24 22% 12%",
-
-        "--primary": "22 55% 32%",
-        "--primary-foreground": "30 40% 99%",
-
-        "--secondary": "28 35% 94%",
-        "--secondary-foreground": "24 22% 16%",
-
-        "--muted": "28 30% 95%",
-        "--muted-foreground": "24 10% 42%",
-
-        "--accent": "10 55% 92%",
-        "--accent-foreground": "22 55% 26%",
-
-        "--destructive": "0 72% 52%",
-        "--destructive-foreground": "30 40% 99%",
-
-        "--border": "26 22% 88%",
-        "--input": "26 22% 88%",
-        "--ring": "22 55% 32%",
-
-        "--chart-1": "22 55% 40%",
-        "--chart-2": "168 35% 34%",
-        "--chart-3": "10 55% 52%",
-        "--chart-4": "42 65% 52%",
-        "--chart-5": "200 45% 42%",
-
-        "--radius": "0.9rem",
-
-        "--shadow-sm": "0 1px 2px rgba(69, 46, 22, 0.06)",
-        "--shadow-md": "0 10px 30px rgba(69, 46, 22, 0.10)",
-        "--shadow-focus": "0 0 0 4px rgba(166, 110, 54, 0.18)",
-
-        "--surface-noise": "url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22120%22 height=%22120%22 filter=%22url(%23n)%22 opacity=%220.08%22/%3E%3C/svg%3E')"
-      },
-      "hex_reference": {
-        "cream": "#FCFAF7",
-        "sand": "#F2E8DC",
-        "latte": "#E7D6C3",
-        "caramel": "#A66E36",
-        "cocoa": "#452E16",
-        "rose": "#F2C7C2",
-        "sage": "#3F6F66",
-        "ink": "#241A12"
-      },
-      "gradients": {
-        "allowed_usage": [
-          "Top header band behind page title (max ~140px height)",
-          "Dashboard hero strip only",
-          "Decorative blobs behind empty states"
-        ],
-        "recipes": {
-          "warm_header_band": "bg-[radial-gradient(1200px_300px_at_20%_0%,rgba(242,199,194,0.55),transparent_60%),radial-gradient(900px_260px_at_80%_10%,rgba(231,214,195,0.65),transparent_55%)]",
-          "soft_corner_glow": "bg-[radial-gradient(600px_240px_at_10%_10%,rgba(166,110,54,0.18),transparent_60%)]"
-        }
-      }
-    },
-
-    "spacing": {
-      "philosophy": "Use 2–3x more whitespace than typical dashboards. Reading comfort > density.",
-      "container": "max-w-[1200px] px-4 sm:px-6 lg:px-8",
-      "section_gap": "space-y-6 sm:space-y-8",
-      "card_padding": "p-4 sm:p-5",
-      "editor_padding": "p-4 sm:p-6"
-    },
-
-    "radius": {
-      "app": "rounded-2xl",
-      "cards": "rounded-2xl",
-      "inputs": "rounded-xl",
-      "buttons": "rounded-xl",
-      "chips": "rounded-full"
-    },
-
-    "shadows": {
-      "cards": "shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]",
-      "floating_panels": "shadow-[0_18px_60px_rgba(69,46,22,0.14)]"
+    "style_fusion": {
+      "layout_principle": "Modern creator dashboard (structured sidebar + bento cards + dense-but-breathable tables)",
+      "surface_language": "Crisp light theme with warm ivory base + subtle noise + defined borders/shadows",
+      "color_strategy": "Neutral foundation + 6–7 semantic accent colors mapped to categories (nav, content type, status, provider, export, score tier, media type)",
+      "motion_strategy": "Micro-interactions on hover/press/focus + subtle entrance transitions; no universal transitions"
     }
   },
-
   "typography": {
-    "font_pairing": {
-      "headings": {
+    "fonts": {
+      "display": {
         "family": "Fraunces",
-        "fallback": "ui-serif, Georgia, serif",
-        "google_fonts_import": "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500,600,700&display=swap"
+        "usage": "Page titles, section headers, auth hero headline",
+        "notes": "Keep letter-spacing slightly tight; avoid using for long paragraphs"
       },
-      "body_ui": {
+      "body": {
         "family": "Manrope",
-        "fallback": "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial",
-        "google_fonts_import": "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
+        "usage": "UI labels, body copy, tables, forms"
       },
       "mono": {
         "family": "IBM Plex Mono",
-        "google_fonts_import": "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
+        "usage": "IDs, export snippets, model names in compact chips"
       }
     },
-    "tailwind_usage": {
-      "notes": "Add font-family to body in index.css and create utility classes (or inline style) for headings.",
-      "heading_class": "font-[Fraunces] tracking-[-0.02em]",
-      "body_class": "font-[Manrope]"
-    },
-    "type_scale": {
-      "h1": "text-4xl sm:text-5xl lg:text-6xl leading-[1.05]",
-      "h2": "text-base md:text-lg text-muted-foreground",
-      "section_title": "text-xl sm:text-2xl font-semibold",
-      "body": "text-sm sm:text-base leading-7",
-      "small": "text-xs sm:text-sm"
-    },
-    "reading": {
-      "article_width": "max-w-[78ch]",
-      "editor_line_height": "leading-7",
-      "prose": "Use Tailwind typography plugin if available; otherwise implement a minimal .prose-like class for markdown rendering."
+    "type_scale_tailwind": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl font-display tracking-tight",
+      "h2": "text-base md:text-lg font-medium text-muted-foreground",
+      "section_title": "text-lg sm:text-xl font-display",
+      "body": "text-sm sm:text-base",
+      "small": "text-xs text-muted-foreground"
     }
   },
-
-  "layout": {
-    "grid_system": {
-      "dashboard": "Mobile: single column. >=lg: 12-col grid with 8-col main + 4-col side rail.",
-      "studio_pages": "Split layout: left prompt/composer rail (collapsible) + center editor + right inspector (quality/media/export). On mobile: tabs/accordion to switch rails.",
-      "library_pages": "Toolbar + filters row, then responsive grid (2 cols sm, 3 cols lg, 4 cols xl) or table with sticky header."
-    },
-    "navigation": {
-      "pattern": "Left sidebar (Sheet on mobile) + top command bar.",
-      "sidebar_width": "w-[264px]",
-      "topbar_height": "h-14",
-      "key_items": [
-        "Dashboard",
-        "Blog Studio",
-        "Newsletter Studio",
-        "Content Library",
-        "Media Library",
-        "Knowledge Base"
-      ]
-    }
-  },
-
-  "components": {
-    "component_path": {
-      "shadcn_primary": "/app/frontend/src/components/ui",
-      "use_these": {
-        "buttons": "button.jsx",
-        "inputs": "input.jsx, textarea.jsx",
-        "tabs": "tabs.jsx",
-        "dialogs": "dialog.jsx, alert-dialog.jsx",
-        "sheet_drawer": "sheet.jsx, drawer.jsx",
-        "table": "table.jsx",
-        "select": "select.jsx",
-        "popover_tooltip": "popover.jsx, tooltip.jsx",
-        "progress": "progress.jsx",
-        "badge": "badge.jsx",
-        "calendar": "calendar.jsx",
-        "scroll_area": "scroll-area.jsx",
-        "skeleton": "skeleton.jsx",
-        "sonner_toasts": "sonner.jsx"
-      }
-    },
-
-    "key_custom_components_to_build": {
-      "PromptComposer": {
-        "purpose": "Prompt input + model picker + single/batch toggle + generate CTA.",
-        "composition": [
-          "Card",
-          "Textarea",
-          "Select",
-          "Tabs (Single / Batch)",
-          "Button",
-          "Badge (token count / provider)"
-        ],
-        "micro_interactions": [
-          "Generate button: hover lift (translate-y-[-1px]) + shadow-md",
-          "Provider badge: subtle pulse while generating (prefers-reduced-motion respected)"
-        ],
-        "data_testids": [
-          "prompt-composer-textarea",
-          "prompt-composer-model-select",
-          "prompt-composer-mode-tabs",
-          "prompt-composer-generate-button"
-        ]
+  "design_tokens": {
+    "drop_in_replacement_index_css_root": {
+      "instructions": "Replace ONLY the values inside @layer base :root in /app/frontend/src/index.css. Keep variable names identical to avoid breaking existing components. Then ADD the new semantic accent variables below.",
+      "base_tokens_hsl": {
+        "--background": {
+          "hsl": "34 60% 98%",
+          "hex_reference": "#FFFBF6",
+          "why": "Warmer ivory base; still reads as modern white"
+        },
+        "--foreground": {
+          "hsl": "24 28% 10%",
+          "hex_reference": "#24170F",
+          "why": "Stronger contrast for readability"
+        },
+        "--card": {
+          "hsl": "0 0% 100%",
+          "hex_reference": "#FFFFFF",
+          "why": "Crisper surfaces so sections don’t blend into beige"
+        },
+        "--card-foreground": {
+          "hsl": "24 28% 10%",
+          "hex_reference": "#24170F"
+        },
+        "--popover": {
+          "hsl": "0 0% 100%",
+          "hex_reference": "#FFFFFF"
+        },
+        "--popover-foreground": {
+          "hsl": "24 28% 10%",
+          "hex_reference": "#24170F"
+        },
+        "--primary": {
+          "hsl": "22 62% 30%",
+          "hex_reference": "#7A3F1D",
+          "why": "Deeper terracotta-brown for modern warmth + stronger CTA contrast"
+        },
+        "--primary-foreground": {
+          "hsl": "34 60% 98%",
+          "hex_reference": "#FFFBF6"
+        },
+        "--secondary": {
+          "hsl": "30 35% 92%",
+          "hex_reference": "#F2E7DC",
+          "why": "Warm neutral for subtle fills (tabs/ghost areas)"
+        },
+        "--secondary-foreground": {
+          "hsl": "24 25% 14%",
+          "hex_reference": "#2F2017"
+        },
+        "--muted": {
+          "hsl": "30 30% 94%",
+          "hex_reference": "#F6EEE6"
+        },
+        "--muted-foreground": {
+          "hsl": "24 12% 38%",
+          "hex_reference": "#6B5A4E"
+        },
+        "--accent": {
+          "hsl": "18 70% 92%",
+          "hex_reference": "#FBE1D6",
+          "why": "Warm peach accent background for subtle highlights"
+        },
+        "--accent-foreground": {
+          "hsl": "22 62% 24%",
+          "hex_reference": "#633016"
+        },
+        "--destructive": {
+          "hsl": "0 74% 52%",
+          "hex_reference": "#E5484D"
+        },
+        "--destructive-foreground": {
+          "hsl": "0 0% 100%",
+          "hex_reference": "#FFFFFF"
+        },
+        "--border": {
+          "hsl": "24 18% 84%",
+          "hex_reference": "#D9C9BC",
+          "why": "More visible borders to separate beige-adjacent surfaces"
+        },
+        "--input": {
+          "hsl": "24 18% 84%",
+          "hex_reference": "#D9C9BC"
+        },
+        "--ring": {
+          "hsl": "22 62% 30%",
+          "hex_reference": "#7A3F1D",
+          "why": "Focus ring matches primary; add shadow-focus below"
+        },
+        "--radius": {
+          "value": "0.95rem",
+          "why": "Slightly more modern + friendly"
+        },
+        "--shadow-sm": {
+          "value": "0 1px 2px rgba(36, 23, 15, 0.06)",
+          "why": "Neutral shadow (less muddy brown)"
+        },
+        "--shadow-md": {
+          "value": "0 14px 40px rgba(36, 23, 15, 0.10)"
+        },
+        "--shadow-focus": {
+          "value": "0 0 0 4px rgba(122, 63, 29, 0.18)",
+          "why": "Visible focus halo on light surfaces"
+        },
+        "--chart-1": { "hsl": "22 62% 38%", "hex_reference": "#9A4E24" },
+        "--chart-2": { "hsl": "174 52% 32%", "hex_reference": "#1F7A6B" },
+        "--chart-3": { "hsl": "8 78% 56%", "hex_reference": "#F05A4F" },
+        "--chart-4": { "hsl": "42 85% 52%", "hex_reference": "#F2B233" },
+        "--chart-5": { "hsl": "206 62% 44%", "hex_reference": "#2F7DBA" }
       },
-
-      "BatchGenerationQueue": {
-        "purpose": "List of 5–10 items with per-item progress + status chips.",
-        "composition": [
-          "Card",
-          "Progress",
-          "Badge",
-          "Skeleton"
-        ],
-        "states": [
-          "queued",
-          "generating",
-          "complete",
-          "failed"
-        ],
-        "data_testids": [
-          "batch-queue-list",
-          "batch-queue-item",
-          "batch-queue-item-progress"
-        ]
-      },
-
-      "QualityScorePanel": {
-        "purpose": "0–100 score + rubric breakdown + suggestions.",
-        "composition": [
-          "Card",
-          "Progress (as meter)",
-          "Accordion (rubric sections)",
-          "Badge (score tier)",
-          "Button (Apply suggestions)"
-        ],
-        "visual": {
-          "score_tiers": {
-            "90_100": "sage",
-            "70_89": "caramel",
-            "0_69": "rose/destructive"
+      "new_semantic_accent_tokens_additive": {
+        "instructions": "Add these variables under the existing :root tokens (same block). Use them for color-coding chips/badges/nav indicators. Keep them as HSL triplets to match shadcn token style.",
+        "accent_map": {
+          "nav_sections": {
+            "--accent-dashboard": { "hsl": "206 62% 44%", "hex_reference": "#2F7DBA", "label": "Dashboard / analytics" },
+            "--accent-blog": { "hsl": "22 62% 38%", "hex_reference": "#9A4E24", "label": "Blog Studio" },
+            "--accent-newsletter": { "hsl": "174 52% 32%", "hex_reference": "#1F7A6B", "label": "Newsletter Studio" },
+            "--accent-content-library": { "hsl": "262 38% 52%", "hex_reference": "#7B6BB8", "label": "Content Library (soft violet — NOT gradient; safe single color)" },
+            "--accent-media-library": { "hsl": "8 78% 56%", "hex_reference": "#F05A4F", "label": "Media Library" },
+            "--accent-knowledge-base": { "hsl": "42 85% 52%", "hex_reference": "#F2B233", "label": "Knowledge Base" }
           },
-          "meter_style": "Use Progress with custom indicator color via className; add small tick marks using CSS background on the track."
+          "status": {
+            "--accent-draft": { "hsl": "24 12% 38%", "hex_reference": "#6B5A4E", "label": "Draft" },
+            "--accent-published": { "hsl": "152 52% 34%", "hex_reference": "#2E8A5A", "label": "Published" },
+            "--accent-queued": { "hsl": "206 62% 44%", "hex_reference": "#2F7DBA", "label": "Queued" },
+            "--accent-generating": { "hsl": "42 85% 52%", "hex_reference": "#F2B233", "label": "Generating" },
+            "--accent-complete": { "hsl": "152 52% 34%", "hex_reference": "#2E8A5A", "label": "Complete" },
+            "--accent-failed": { "hsl": "0 74% 52%", "hex_reference": "#E5484D", "label": "Failed" }
+          },
+          "model_providers": {
+            "--accent-openai": { "hsl": "174 52% 32%", "hex_reference": "#1F7A6B", "label": "OpenAI" },
+            "--accent-anthropic": { "hsl": "22 62% 38%", "hex_reference": "#9A4E24", "label": "Anthropic" },
+            "--accent-gemini": { "hsl": "206 62% 44%", "hex_reference": "#2F7DBA", "label": "Gemini" }
+          },
+          "quality_score_tiers": {
+            "--accent-score-excellent": { "hsl": "152 52% 34%", "hex_reference": "#2E8A5A", "label": "Excellent" },
+            "--accent-score-good": { "hsl": "42 85% 52%", "hex_reference": "#F2B233", "label": "Good" },
+            "--accent-score-needs-work": { "hsl": "8 78% 56%", "hex_reference": "#F05A4F", "label": "Needs work" }
+          },
+          "export_formats": {
+            "--accent-export-html": { "hsl": "206 62% 44%", "hex_reference": "#2F7DBA" },
+            "--accent-export-markdown": { "hsl": "262 38% 52%", "hex_reference": "#7B6BB8" },
+            "--accent-export-wordpress": { "hsl": "174 52% 32%", "hex_reference": "#1F7A6B" },
+            "--accent-export-csv": { "hsl": "152 52% 34%", "hex_reference": "#2E8A5A" },
+            "--accent-export-pdf": { "hsl": "0 74% 52%", "hex_reference": "#E5484D" },
+            "--accent-export-txt": { "hsl": "24 12% 38%", "hex_reference": "#6B5A4E" }
+          },
+          "media_types": {
+            "--accent-media-image": { "hsl": "22 62% 38%", "hex_reference": "#9A4E24" },
+            "--accent-media-gif": { "hsl": "262 38% 52%", "hex_reference": "#7B6BB8" },
+            "--accent-media-video": { "hsl": "206 62% 44%", "hex_reference": "#2F7DBA" }
+          }
         },
-        "data_testids": [
-          "quality-score-panel",
-          "quality-score-value",
-          "quality-score-rubric-accordion",
-          "quality-score-suggestions"
-        ]
+        "helper_tokens": {
+          "--surface-2": { "hsl": "30 35% 96%", "hex_reference": "#FAF2EA", "usage": "Page section background blocks" },
+          "--surface-3": { "hsl": "30 35% 92%", "hex_reference": "#F2E7DC", "usage": "Selected row / subtle highlight" },
+          "--focus": { "hsl": "206 62% 44%", "hex_reference": "#2F7DBA", "usage": "Optional alternate focus ring for non-primary contexts" }
+        }
       },
-
-      "RichContentEditorShell": {
-        "purpose": "Comfortable writing surface for long-form content + media blocks.",
-        "layout": "Center column max-w-[78ch] with sticky mini-toolbar.",
-        "composition": [
-          "Card (editor surface)",
-          "ScrollArea",
-          "Tabs (Write / Preview)",
-          "Popover (insert media)",
-          "Dialog (export)"
+      "texture_tokens": {
+        "noise_overlay_css": "background-image: radial-gradient(circle at 1px 1px, rgba(36,23,15,0.06) 1px, transparent 0); background-size: 14px 14px;",
+        "usage": "Apply only to large backgrounds (auth page, dashboard header band). Keep opacity <= 0.06."
+      }
+    }
+  },
+  "layout_and_grid": {
+    "app_shell": {
+      "sidebar_width": "w-[264px] lg:w-[288px]",
+      "content_max_width": "max-w-[1200px] (for centered inner content blocks only; do not center entire app)",
+      "page_padding": "px-4 sm:px-6 lg:px-8 py-6",
+      "grid_patterns": {
+        "dashboard_bento": "grid grid-cols-1 lg:grid-cols-12 gap-4",
+        "dashboard_cards": [
+          "KPI strip: lg:col-span-12",
+          "Queue: lg:col-span-7",
+          "Quality: lg:col-span-5",
+          "Recent exports: lg:col-span-6",
+          "Knowledge snippets: lg:col-span-6"
         ],
-        "editor_surface_classes": "bg-card rounded-2xl border border-border shadow-[var(--shadow-sm)]",
-        "data_testids": [
-          "rich-editor",
-          "rich-editor-write-tab",
-          "rich-editor-preview-tab"
-        ]
-      },
-
-      "MediaInsertDialog": {
-        "purpose": "Insert media via Upload / URL / Generate (Nano Banana) / Giphy / YouTube embed.",
-        "composition": [
-          "Dialog",
-          "Tabs",
-          "Input",
-          "Button",
-          "AspectRatio",
-          "Carousel (optional for recent assets)"
-        ],
-        "tabs": [
-          "Upload",
-          "From URL",
-          "Generate",
-          "Giphy",
-          "YouTube"
-        ],
-        "data_testids": [
-          "media-insert-dialog",
-          "media-insert-tabs",
-          "media-upload-input",
-          "media-url-input",
-          "media-generate-prompt-textarea",
-          "media-generate-submit-button"
-        ]
-      },
-
-      "ExportModal": {
-        "purpose": "Choose export format + destination (WordPress / React subdomain) + copy/download.",
-        "composition": [
-          "Dialog",
-          "RadioGroup",
-          "Select",
-          "Button",
-          "Input (WP URL / credentials placeholder)",
-          "Textarea (export preview)"
-        ],
-        "formats": [
-          "HTML",
-          "Markdown",
-          "WordPress-ready",
-          "CSV",
-          "PDF",
-          "TXT"
-        ],
-        "data_testids": [
-          "export-modal",
-          "export-format-radio-group",
-          "export-confirm-button",
-          "export-preview-textarea"
-        ]
-      },
-
-      "KnowledgeBaseSources": {
-        "purpose": "Add URLs + upload docs; show analyzed sources; select as reference set.",
-        "composition": [
-          "Tabs (URLs / Documents)",
-          "Input",
-          "Button",
-          "Table",
-          "Badge",
-          "Checkbox"
-        ],
-        "data_testids": [
-          "knowledge-base-tabs",
-          "knowledge-base-add-url-input",
-          "knowledge-base-add-url-button",
-          "knowledge-base-sources-table"
-        ]
+        "library_table": "Use full width; filters in a sticky top bar"
       }
     },
-
+    "auth_pages": {
+      "layout": "Split-screen on lg: left brand panel (visual + copy), right form card. On mobile: stacked with brand header above form.",
+      "form_card": "max-w-md w-full",
+      "brand_panel": "Use warm band background + subtle noise; keep gradients under 20% viewport"
+    }
+  },
+  "component_styles": {
+    "component_path": {
+      "shadcn_primary": [
+        "/app/frontend/src/components/ui/button.jsx",
+        "/app/frontend/src/components/ui/card.jsx",
+        "/app/frontend/src/components/ui/badge.jsx",
+        "/app/frontend/src/components/ui/tabs.jsx",
+        "/app/frontend/src/components/ui/select.jsx",
+        "/app/frontend/src/components/ui/table.jsx",
+        "/app/frontend/src/components/ui/progress.jsx",
+        "/app/frontend/src/components/ui/tooltip.jsx",
+        "/app/frontend/src/components/ui/sonner.jsx",
+        "/app/frontend/src/components/ui/dialog.jsx",
+        "/app/frontend/src/components/ui/drawer.jsx",
+        "/app/frontend/src/components/ui/scroll-area.jsx",
+        "/app/frontend/src/components/ui/separator.jsx",
+        "/app/frontend/src/components/ui/skeleton.jsx"
+      ],
+      "flowbite_optional": [
+        "Flowbite 'Sidebar with badges' pattern (implement using shadcn primitives; do not import HTML dropdowns)"
+      ],
+      "21st_dev_optional": [
+        "Chip / pill filter patterns (recreate using shadcn ToggleGroup + Badge)"
+      ]
+    },
     "buttons": {
-      "variants": {
-        "primary": {
-          "intent": "Generate / Save / Export",
-          "classes": "bg-primary text-primary-foreground hover:bg-[hsl(22_55%_28%)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] active:translate-y-[1px]",
-          "focus": "focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
-        },
-        "secondary": {
-          "intent": "Preview / Insert media",
-          "classes": "bg-secondary text-secondary-foreground hover:bg-[hsl(28_35%_92%)]"
-        },
-        "ghost": {
-          "intent": "Toolbar icons",
-          "classes": "hover:bg-[hsl(28_30%_95%)]"
-        }
-      },
+      "base": "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:opacity-50 disabled:pointer-events-none",
+      "primary": "bg-primary text-primary-foreground shadow-sm hover:brightness-[0.98] active:scale-[0.98] transition-[filter,box-shadow]",
+      "secondary": "bg-secondary text-secondary-foreground border border-border hover:bg-[hsl(var(--surface-3))] active:scale-[0.98] transition-[background-color,border-color]",
+      "ghost": "bg-transparent text-foreground hover:bg-[hsl(var(--surface-2))] active:scale-[0.98] transition-[background-color]",
+      "danger": "bg-destructive text-destructive-foreground hover:brightness-[0.98] active:scale-[0.98] transition-[filter]",
+      "icon": "h-9 w-9 rounded-xl",
       "sizes": {
-        "sm": "h-9 px-3 text-sm",
-        "md": "h-10 px-4 text-sm",
-        "lg": "h-11 px-5 text-base"
+        "sm": "h-9 px-3",
+        "md": "h-10 px-4",
+        "lg": "h-11 px-5"
+      },
+      "data_testid": {
+        "examples": [
+          "data-testid=\"auth-login-submit-button\"",
+          "data-testid=\"blog-studio-generate-button\"",
+          "data-testid=\"export-format-confirm-button\""
+        ]
       }
     },
-
-    "forms": {
-      "inputs": {
-        "classes": "rounded-xl bg-white/70 focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-2",
-        "helper_text": "Use muted-foreground; keep labels short and friendly."
-      }
+    "cards": {
+      "base": "cs-card rounded-2xl bg-card text-card-foreground border border-border",
+      "interactive": "hover:shadow-[var(--shadow-md)] transition-[box-shadow,border-color] hover:border-[hsl(var(--border))]",
+      "header_row": "flex items-start justify-between gap-3",
+      "section_divider": "border-t border-border/70"
     },
-
-    "tables_and_lists": {
-      "content_library": {
-        "pattern": "Table on desktop, card list on mobile.",
-        "table": "Use shadcn Table with sticky header (position: sticky) inside ScrollArea.",
-        "row_hover": "hover:bg-[hsl(28_30%_96%)]",
-        "status_badges": {
-          "draft": "bg-[hsl(28_35%_94%)] text-[hsl(22_55%_26%)]",
-          "published": "bg-[hsl(168_35%_92%)] text-[hsl(168_35%_28%)]",
-          "scheduled": "bg-[hsl(42_65%_92%)] text-[hsl(42_65%_28%)]"
+    "inputs": {
+      "input": "h-11 rounded-xl bg-white border border-input shadow-[var(--shadow-sm)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background transition-[box-shadow,border-color]",
+      "textarea": "rounded-xl bg-white border border-input shadow-[var(--shadow-sm)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background transition-[box-shadow,border-color]",
+      "helper_text": "text-xs text-muted-foreground",
+      "error_text": "text-xs text-destructive",
+      "data_testid_examples": [
+        "data-testid=\"auth-email-input\"",
+        "data-testid=\"auth-password-input\"",
+        "data-testid=\"newsletter-subject-input\""
+      ]
+    },
+    "tabs": {
+      "tabs_list": "bg-[hsl(var(--surface-2))] p-1 rounded-2xl border border-border",
+      "tabs_trigger": "rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-[var(--shadow-sm)] data-[state=active]:text-foreground data-[state=active]:border data-[state=active]:border-border text-muted-foreground transition-[background-color,color,box-shadow]",
+      "data_testid_examples": [
+        "data-testid=\"blog-studio-mode-tabs\"",
+        "data-testid=\"content-library-view-tabs\""
+      ]
+    },
+    "badges_and_chips": {
+      "badge_base": "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold border",
+      "chip_interactive": "cursor-pointer select-none hover:brightness-[0.98] active:scale-[0.98] transition-[filter,transform]",
+      "semantic_badge_classes": {
+        "content_type": {
+          "blog": "bg-[hsl(var(--accent-blog)/0.12)] text-[hsl(var(--accent-blog))] border-[hsl(var(--accent-blog)/0.25)]",
+          "newsletter": "bg-[hsl(var(--accent-newsletter)/0.12)] text-[hsl(var(--accent-newsletter))] border-[hsl(var(--accent-newsletter)/0.25)]"
+        },
+        "status": {
+          "draft": "bg-[hsl(var(--accent-draft)/0.10)] text-[hsl(var(--accent-draft))] border-[hsl(var(--accent-draft)/0.22)]",
+          "published": "bg-[hsl(var(--accent-published)/0.12)] text-[hsl(var(--accent-published))] border-[hsl(var(--accent-published)/0.25)]",
+          "queued": "bg-[hsl(var(--accent-queued)/0.12)] text-[hsl(var(--accent-queued))] border-[hsl(var(--accent-queued)/0.25)]",
+          "generating": "bg-[hsl(var(--accent-generating)/0.14)] text-[hsl(var(--accent-generating))] border-[hsl(var(--accent-generating)/0.28)]",
+          "complete": "bg-[hsl(var(--accent-complete)/0.12)] text-[hsl(var(--accent-complete))] border-[hsl(var(--accent-complete)/0.25)]",
+          "failed": "bg-[hsl(var(--accent-failed)/0.12)] text-[hsl(var(--accent-failed))] border-[hsl(var(--accent-failed)/0.25)]"
+        },
+        "providers": {
+          "openai": "bg-[hsl(var(--accent-openai)/0.12)] text-[hsl(var(--accent-openai))] border-[hsl(var(--accent-openai)/0.25)]",
+          "anthropic": "bg-[hsl(var(--accent-anthropic)/0.12)] text-[hsl(var(--accent-anthropic))] border-[hsl(var(--accent-anthropic)/0.25)]",
+          "gemini": "bg-[hsl(var(--accent-gemini)/0.12)] text-[hsl(var(--accent-gemini))] border-[hsl(var(--accent-gemini)/0.25)]"
+        },
+        "export_formats": {
+          "html": "bg-[hsl(var(--accent-export-html)/0.12)] text-[hsl(var(--accent-export-html))] border-[hsl(var(--accent-export-html)/0.25)]",
+          "markdown": "bg-[hsl(var(--accent-export-markdown)/0.12)] text-[hsl(var(--accent-export-markdown))] border-[hsl(var(--accent-export-markdown)/0.25)]",
+          "wordpress": "bg-[hsl(var(--accent-export-wordpress)/0.12)] text-[hsl(var(--accent-export-wordpress))] border-[hsl(var(--accent-export-wordpress)/0.25)]",
+          "csv": "bg-[hsl(var(--accent-export-csv)/0.12)] text-[hsl(var(--accent-export-csv))] border-[hsl(var(--accent-export-csv)/0.25)]",
+          "pdf": "bg-[hsl(var(--accent-export-pdf)/0.12)] text-[hsl(var(--accent-export-pdf))] border-[hsl(var(--accent-export-pdf)/0.25)]",
+          "txt": "bg-[hsl(var(--accent-export-txt)/0.12)] text-[hsl(var(--accent-export-txt))] border-[hsl(var(--accent-export-txt)/0.25)]"
+        },
+        "media_types": {
+          "image": "bg-[hsl(var(--accent-media-image)/0.12)] text-[hsl(var(--accent-media-image))] border-[hsl(var(--accent-media-image)/0.25)]",
+          "gif": "bg-[hsl(var(--accent-media-gif)/0.12)] text-[hsl(var(--accent-media-gif))] border-[hsl(var(--accent-media-gif)/0.25)]",
+          "video": "bg-[hsl(var(--accent-media-video)/0.12)] text-[hsl(var(--accent-media-video))] border-[hsl(var(--accent-media-video)/0.25)]"
         }
-      }
-    },
-
-    "empty_states": {
-      "tone": "Encouraging, romantic, action-oriented (e.g., 'Let’s plan your next post').",
-      "visual": "Use a small warm illustration/photo tile + 1 primary CTA.",
-      "classes": "rounded-2xl border border-dashed border-border bg-[hsl(28_30%_97%)]"
-    }
-  },
-
-  "motion": {
-    "library": {
-      "recommended": "framer-motion",
-      "install": "npm i framer-motion",
-      "usage_notes": [
-        "Use for page transitions, queue item entrance, and subtle hover lifts.",
-        "Respect prefers-reduced-motion: reduce durations to 0 and disable parallax."
-      ]
-    },
-    "principles": {
-      "durations": {
-        "fast": "120ms",
-        "base": "180ms",
-        "slow": "260ms"
       },
-      "easing": "cubic-bezier(0.2, 0.8, 0.2, 1)",
-      "patterns": [
-        "Cards: hover translate-y-[-2px] + shadow-md",
-        "Buttons: active translate-y-[1px]",
-        "Batch items: slide/fade in from y=6",
-        "Side panels: Sheet/Drawer with soft spring"
-      ],
-      "avoid": [
-        "transition: all",
-        "Large parallax on content-heavy pages"
-      ]
-    }
-  },
-
-  "accessibility": {
-    "contrast": "Ensure text on cream backgrounds uses foreground ink; avoid low-contrast beige-on-beige.",
-    "focus": "Use visible focus ring via --shadow-focus; never remove outline without replacement.",
-    "keyboard": "All dialogs, menus, tabs must be keyboard navigable (shadcn defaults help).",
-    "reduced_motion": "Provide reduced motion fallback for framer-motion animations.",
-    "content": "Long-form editor: keep line length <= 78ch; provide clear headings and spacing."
-  },
-
-  "page_blueprints": {
-    "Dashboard": {
-      "header": "Warm header band (<=140px) with page title + quick actions.",
-      "main": [
-        "Quick Actions bento: New Blog, New Newsletter, Batch Generate",
-        "Recent drafts list",
-        "Generation activity (queue + progress)",
-        "Quality insights mini card (avg score, top suggestions)"
-      ],
-      "side_rail": [
-        "Upcoming newsletter issue",
-        "Pinned knowledge sources",
-        "Media uploads shortcut"
+      "data_testid_examples": [
+        "data-testid=\"content-type-badge\"",
+        "data-testid=\"status-badge\"",
+        "data-testid=\"model-provider-chip\"",
+        "data-testid=\"export-format-chip\"",
+        "data-testid=\"media-type-chip\""
       ]
     },
-    "BlogStudio": {
-      "layout": "3-panel on desktop; stacked tabs on mobile.",
-      "left": [
-        "PromptComposer",
-        "Knowledge reference selector (Popover + Checkbox list)"
-      ],
-      "center": [
-        "RichContentEditorShell",
-        "Inline media blocks"
-      ],
-      "right": [
-        "QualityScorePanel",
-        "Export CTA",
-        "MediaInsertDialog trigger"
-      ]
-    },
-    "NewsletterStudio": {
-      "layout": "Similar to BlogStudio but with section blocks (Intro, Feature, CTA, Events).",
-      "center": [
-        "Section editor cards with drag handles (optional later)",
-        "Preview mode (email-like)"
-      ]
-    },
-    "MediaLibrary": {
-      "toolbar": [
-        "Search",
-        "Filter (type: image/gif/video)",
-        "Upload",
-        "Generate"
-      ],
-      "grid": "Cards with AspectRatio thumbnails; hover reveals actions (Insert, Copy URL, Delete).",
-      "details": "Right-side Drawer for metadata + usage history."
-    },
-    "KnowledgeBase": {
-      "top": "Add URL + Upload doc",
-      "list": "Table with status (analyzing/ready/failed), last updated, select checkbox",
-      "detail": "Drawer with extracted summary + key topics"
-    },
-    "ContentLibrary": {
-      "filters": "Status chips + type (blog/newsletter) + date range (Calendar)",
-      "list": "Table with row actions (Edit, Export, Delete)"
-    }
-  },
-
-  "images": {
-    "image_urls": [
-      {
-        "category": "dashboard_header",
-        "description": "Warm lifestyle workspace photo for subtle header/empty-state tile (use with overlay + blur, not full-bleed).",
-        "url": "https://images.pexels.com/photos/28868217/pexels-photo-28868217.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+    "sidebar_nav": {
+      "nav_item": "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--surface-2))] transition-[background-color,color]",
+      "nav_item_active": "bg-white text-foreground border border-border shadow-[var(--shadow-sm)]",
+      "left_accent_bar": "relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-1 before:rounded-full",
+      "accent_usage": {
+        "dashboard": "before:bg-[hsl(var(--accent-dashboard))]",
+        "blog": "before:bg-[hsl(var(--accent-blog))]",
+        "newsletter": "before:bg-[hsl(var(--accent-newsletter))]",
+        "content_library": "before:bg-[hsl(var(--accent-content-library))]",
+        "media_library": "before:bg-[hsl(var(--accent-media-library))]",
+        "knowledge_base": "before:bg-[hsl(var(--accent-knowledge-base))]"
       },
-      {
-        "category": "empty_state_tile",
-        "description": "Cozy creative desk scene for empty states in Blog/Newsletter studio.",
-        "url": "https://images.pexels.com/photos/36162359/pexels-photo-36162359.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
-      },
-      {
-        "category": "brand_lifestyle",
-        "description": "Romantic date-night bokeh photo for marketing-like panels (sparingly, small tiles).",
-        "url": "https://images.pexels.com/photos/20511996/pexels-photo-20511996.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
-      },
-      {
-        "category": "brand_lifestyle",
-        "description": "Couple at bar with warm premium vibe; use for onboarding/auth later.",
-        "url": "https://images.pexels.com/photos/4694282/pexels-photo-4694282.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
-      }
-    ]
-  },
-
-  "instructions_to_main_agent": {
-    "global_css_updates": [
-      "Replace the default shadcn neutral tokens in /app/frontend/src/index.css :root with the HSL values above.",
-      "Remove CRA demo styles in /app/frontend/src/App.css (App-header etc.) and keep App.css minimal (no text-align:center).",
-      "Add Google Fonts imports (Fraunces + Manrope + IBM Plex Mono) in index.html or via CSS @import at top of index.css.",
-      "Apply body font to Manrope; apply headings font via utility class or CSS for h1/h2 in page headers."
-    ],
-    "component_build_order": [
-      "1) AppShell: Sidebar + Topbar + responsive Sheet",
-      "2) Dashboard bento cards + Recent content list",
-      "3) BlogStudio 3-panel layout + PromptComposer",
-      "4) RichContentEditorShell (Write/Preview) + MediaInsertDialog",
-      "5) QualityScorePanel + BatchGenerationQueue",
-      "6) ContentLibrary table + filters",
-      "7) MediaLibrary grid + Drawer details",
-      "8) KnowledgeBase sources table + Drawer"
-    ],
-    "testing": {
-      "data_testid_rule": "Every button/input/tab/row-action and key info (score value, status badge text) must include data-testid in kebab-case.",
-      "examples": [
+      "data_testid_examples": [
         "data-testid=\"sidebar-nav-dashboard\"",
-        "data-testid=\"topbar-global-search\"",
-        "data-testid=\"content-library-status-filter\"",
-        "data-testid=\"media-library-upload-button\""
+        "data-testid=\"sidebar-nav-blog-studio\"",
+        "data-testid=\"sidebar-nav-newsletter-studio\"",
+        "data-testid=\"sidebar-nav-content-library\"",
+        "data-testid=\"sidebar-nav-media-library\"",
+        "data-testid=\"sidebar-nav-knowledge-base\""
       ]
     },
-    "iconography": {
-      "library": "lucide-react",
-      "style": "Use 1.75px stroke, rounded linecaps; keep icons small (16–18px) in toolbars."
+    "quality_score_gauge": {
+      "component": "Use shadcn Progress + Badge tiers; optionally add a small radial gauge using SVG (no heavy libs).",
+      "tier_logic": {
+        "excellent": ">= 85",
+        "good": "70–84",
+        "needs_work": "< 70"
+      },
+      "progress_classes": {
+        "track": "bg-[hsl(var(--surface-2))]",
+        "indicator_excellent": "bg-[hsl(var(--accent-score-excellent))]",
+        "indicator_good": "bg-[hsl(var(--accent-score-good))]",
+        "indicator_needs_work": "bg-[hsl(var(--accent-score-needs-work))]"
+      },
+      "data_testid_examples": [
+        "data-testid=\"quality-score-progress\"",
+        "data-testid=\"quality-score-tier-badge\""
+      ]
     },
-    "notes": [
-      "Keep gradients decorative and limited to header bands; never behind long text blocks.",
-      "Prefer cards with warm borders and subtle shadows; avoid heavy outlines.",
-      "Use ScrollArea for long side panels (quality rubric, media details)."
+    "tables": {
+      "table_container": "rounded-2xl border border-border bg-card shadow-[var(--shadow-sm)] overflow-hidden",
+      "header": "bg-[hsl(var(--surface-2))]",
+      "row": "hover:bg-[hsl(var(--surface-2))] transition-[background-color]",
+      "row_selected": "bg-[hsl(var(--surface-3))]",
+      "data_testid_examples": [
+        "data-testid=\"content-library-table\"",
+        "data-testid=\"content-library-row\""
+      ]
+    }
+  },
+  "page_blueprints": {
+    "login": {
+      "structure": [
+        "Top-left brand mark + 'Content Studio'",
+        "Left panel (lg only): warm band background + 2 bullets (Blog Studio, Newsletter Studio) + small screenshot placeholder",
+        "Right panel: Card with title 'Welcome back' + email/password + submit + 'Create account' link"
+      ],
+      "microcopy": {
+        "headline": "Welcome back",
+        "subhead": "Log in to keep your date-ideas content flowing.",
+        "helper": "Use your My Date Jar workspace credentials."
+      },
+      "required_data_testids": [
+        "auth-login-email-input",
+        "auth-login-password-input",
+        "auth-login-submit-button",
+        "auth-login-signup-link",
+        "auth-login-error-text"
+      ]
+    },
+    "signup": {
+      "structure": [
+        "Same split layout for consistency",
+        "Form fields: name (optional if supported), email, password, confirm password",
+        "Checkbox: accept terms (if present)",
+        "Submit button + 'Already have an account?' link"
+      ],
+      "microcopy": {
+        "headline": "Create your workspace",
+        "subhead": "Generate blogs, newsletters, and exports in one warm, organized studio."
+      },
+      "required_data_testids": [
+        "auth-signup-email-input",
+        "auth-signup-password-input",
+        "auth-signup-confirm-password-input",
+        "auth-signup-submit-button",
+        "auth-signup-login-link",
+        "auth-signup-error-text"
+      ]
+    }
+  },
+  "motion_and_microinteractions": {
+    "principles": [
+      "No transition:all; only transition specific properties",
+      "Buttons: active scale 0.98; hover brightness slight",
+      "Cards: hover shadow lift",
+      "Sidebar: active item has border+shadow and left accent bar",
+      "Chips: press scale 0.98; selected state uses stronger border"
+    ],
+    "framer_motion_optional": {
+      "install": "npm i framer-motion",
+      "use_cases": [
+        "Auth page panel fade/slide in",
+        "Queue item status change crossfade",
+        "Drawer open/close polish"
+      ],
+      "reduced_motion": "Respect prefers-reduced-motion; keep durations <= 220ms"
+    }
+  },
+  "accessibility": {
+    "requirements": [
+      "WCAG AA contrast for text on backgrounds",
+      "Never rely on color alone: pair badges with text labels/icons",
+      "Focus-visible rings must be clearly visible on all interactive elements",
+      "Hit targets >= 40px height for primary controls",
+      "Use aria-label for icon-only buttons"
     ]
   },
-
-  "General UI UX Design Guidelines": "- You must **not** apply universal transition. Eg: `transition: all`. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms\n    - You must **not** center align the app container, ie do not add `.App { text-align: center; }` in the css file. This disrupts the human natural reading flow of text\n   - NEVER: use AI assistant Emoji characters like`🤖🧠💭💡🔮🎯📚🎭🎬🎪🎉🎊🎁🎀🎂🍰🎈🎨🎰💰💵💳🏦💎🪙💸🤑📊📈📉💹🔢🏆🥇 etc for icons. Always use **FontAwesome cdn** or **lucid-react** library already installed in the package.json\n\n **GRADIENT RESTRICTION RULE**\nNEVER use dark/saturated gradient combos (e.g., purple/pink) on any UI element.  Prohibited gradients: blue-500 to purple 600, purple 500 to pink-500, green-500 to blue-500, red to pink etc\nNEVER use dark gradients for logo, testimonial, footer etc\nNEVER let gradients cover more than 20% of the viewport.\nNEVER apply gradients to text-heavy content or reading areas.\nNEVER use gradients on small UI elements (<100px width).\nNEVER stack multiple gradient layers in the same viewport.\n\n**ENFORCEMENT RULE:**\n    • Id gradient area exceeds 20% of viewport OR affects readability, **THEN** use solid colors\n\n**How and where to use:**\n   • Section backgrounds (not content backgrounds)\n   • Hero section header content. Eg: dark to light to dark color\n   • Decorative overlays and accent elements only\n   • Hero section with 2-3 mild color\n   • Gradients creation can be done for any angle say horizontal, vertical or diagonal\n\n- For AI chat, voice application, **do not use purple color. Use color like light green, ocean blue, peach orange etc**\n\n</Font Guidelines>\n\n- Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead. \n   \n- Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.\n\n- Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.\n   \n- Before generating UI, infer the visual style from the problem statement (palette, contrast, mood, motion) and immediately instantiate it by setting global design tokens (primary, secondary/accent, background, foreground, ring, state colors), rather than relying on any library defaults. Don't make the background dark as a default step, always understand problem first and define colors accordingly\n    Eg: - if it implies playful/energetic, choose a colorful scheme\n           - if it implies monochrome/minimal, choose a black–white/neutral scheme\n\n**Component Reuse:**\n\t- Prioritize using pre-existing components from src/components/ui when applicable\n\t- Create new components that match the style and conventions of existing components when needed\n\t- Examine existing components to understand the project's component patterns before creating new ones\n\n**IMPORTANT**: Do not use HTML based component like dropdown, calendar, toast etc. You **MUST** always use `/app/frontend/src/components/ui/ ` only as a primary components as these are modern and stylish component\n\n**Best Practices:**\n\t- Use Shadcn/UI as the primary component library for consistency and accessibility\n\t- Import path: ./components/[component-name]\n\n**Export Conventions:**\n\t- Components MUST use named exports (export const ComponentName = ...)\n\t- Pages MUST use default exports (export default function PageName() {...})\n\n**Toasts:**\n  - Use `sonner` for toasts\"\n  - Sonner component are located in `/app/src/components/ui/sonner.tsx`\n\nUse 2–4 color gradients, subtle textures/noise overlays, or CSS-based noise to avoid flat visuals."
+  "image_urls": {
+    "auth_brand_panel": [
+      {
+        "url": "https://images.pexels.com/photos/5797906/pexels-photo-5797906.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Warm desk flatlay for login/signup left panel (use with overlay + blur to avoid distraction)",
+        "category": "auth"
+      },
+      {
+        "url": "https://images.pexels.com/photos/7091834/pexels-photo-7091834.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Lifestyle workspace image alternative for auth panel",
+        "category": "auth"
+      }
+    ],
+    "subtle_background_texture": [
+      {
+        "url": "https://images.pexels.com/photos/12008049/pexels-photo-12008049.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Soft pastel blur background for decorative header band (keep under 20% viewport)",
+        "category": "decor"
+      }
+    ]
+  },
+  "instructions_to_main_agent": {
+    "priority_changes": [
+      "Update /app/frontend/src/index.css :root HSL tokens to the new higher-contrast values",
+      "Add the new semantic accent variables (nav/content/status/provider/export/score/media) to :root",
+      "Update sidebar nav items to include left accent bar + active state border/shadow",
+      "Apply semantic badge/chip classes across content types, statuses, providers, export formats, media types",
+      "Refresh auth pages to split layout with brand panel + form card; ensure all inputs/buttons/links have data-testid"
+    ],
+    "implementation_notes_js": [
+      "Project uses .js (not .tsx): keep components in JS and use existing shadcn/ui components from /src/components/ui",
+      "Do not introduce raw HTML dropdown/calendar/toast; use shadcn Select/Calendar/Sonner",
+      "Keep gradients minimal and only as background decoration (<=20% viewport)"
+    ],
+    "do_not_do": [
+      "Do not keep everything beige; cards must be white and borders visible",
+      "Do not use prohibited dark/saturated gradients (purple/pink etc.)",
+      "Do not remove existing data-testid attributes; add missing ones"
+    ]
+  },
+  "appendix_general_ui_ux_design_guidelines": "<General UI UX Design Guidelines>\n    - You must **not** apply universal transition. Eg: `transition: all`. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms\n    - You must **not** center align the app container, ie do not add `.App { text-align: center; }` in the css file. This disrupts the human natural reading flow of text\n   - NEVER: use AI assistant Emoji characters like`🤖🧠💭💡🔮🎯📚🎭🎬🎪🎉🎊🎁🎀🎂🍰🎈🎨🎰💰💵💳🏦💎🪙💸🤑📊📈📉💹🔢🏆🥇 etc for icons. Always use **FontAwesome cdn** or **lucid-react** library already installed in the package.json\n\n **GRADIENT RESTRICTION RULE**\nNEVER use dark/saturated gradient combos (e.g., purple/pink) on any UI element.  Prohibited gradients: blue-500 to purple 600, purple 500 to pink-500, green-500 to blue-500, red to pink etc\nNEVER use dark gradients for logo, testimonial, footer etc\nNEVER let gradients cover more than 20% of the viewport.\nNEVER apply gradients to text-heavy content or reading areas.\nNEVER use gradients on small UI elements (<100px width).\nNEVER stack multiple gradient layers in the same viewport.\n\n**ENFORCEMENT RULE:**\n    • Id gradient area exceeds 20% of viewport OR affects readability, **THEN** use solid colors\n\n**How and where to use:**\n   • Section backgrounds (not content backgrounds)\n   • Hero section header content. Eg: dark to light to dark color\n   • Decorative overlays and accent elements only\n   • Hero section with 2-3 mild color\n   • Gradients creation can be done for any angle say horizontal, vertical or diagonal\n\n- For AI chat, voice application, **do not use purple color. Use color like light green, ocean blue, peach orange etc**\n\n</Font Guidelines>\n\n- Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead. \n   \n- Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.\n\n- Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.\n   \n- Before generating UI, infer the visual style from the problem statement (palette, contrast, mood, motion) and immediately instantiate it by setting global design tokens (primary, secondary/accent, background, foreground, ring, state colors), rather than relying on any library defaults. Don't make the background dark as a default step, always understand problem first and define colors accordingly\n    Eg: - if it implies playful/energetic, choose a colorful scheme\n           - if it implies monochrome/minimal, choose a black–white/neutral scheme\n\n**Component Reuse:**\n\t- Prioritize using pre-existing components from src/components/ui when applicable\n\t- Create new components that match the style and conventions of existing components when needed\n\t- Examine existing components to understand the project's component patterns before creating new ones\n\n**IMPORTANT**: Do not use HTML based component like dropdown, calendar, toast etc. You **MUST** always use `/app/frontend/src/components/ui/ ` only as a primary components as these are modern and stylish component\n\n**Best Practices:**\n\t- Use Shadcn/UI as the primary component library for consistency and accessibility\n\t- Import path: ./components/[component-name]\n\n**Export Conventions:**\n\t- Components MUST use named exports (export const ComponentName = ...)\n\t- Pages MUST use default exports (export default function PageName() {...})\n\n**Toasts:**\n  - Use `sonner` for toasts\"\n  - Sonner component are located in `/app/src/components/ui/sonner.tsx`\n\nUse 2–4 color gradients, subtle textures/noise overlays, or CSS-based noise to avoid flat visuals.\n</General UI UX Design Guidelines>"
 }
