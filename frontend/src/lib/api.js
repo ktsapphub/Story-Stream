@@ -9,7 +9,36 @@ export const absUrl = (u) => {
   return `${BACKEND_URL}${u}`;
 };
 
+const TOKEN_KEY = "cs_token";
+export const getToken = () => localStorage.getItem(TOKEN_KEY);
+export const setToken = (t) => localStorage.setItem(TOKEN_KEY, t);
+export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+
 const http = axios.create({ baseURL: API });
+
+http.interceptors.request.use((config) => {
+  const t = getToken();
+  if (t) config.headers.Authorization = `Bearer ${t}`;
+  return config;
+});
+
+http.interceptors.response.use(
+  (r) => r,
+  (err) => {
+    if (err.response?.status === 401 && !window.location.pathname.startsWith("/login") && !window.location.pathname.startsWith("/signup")) {
+      clearToken();
+      if (!err.config?.url?.includes("/auth/")) {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(err);
+  }
+);
+
+// ---- auth ----
+export const authLogin = (email, password) => http.post("/auth/login", { email, password }).then((r) => r.data);
+export const authSignup = (email, password, name) => http.post("/auth/register", { email, password, name }).then((r) => r.data);
+export const authMe = () => http.get("/auth/me").then((r) => r.data);
 
 export const getModels = () => http.get("/models").then((r) => r.data);
 export const getStats = () => http.get("/stats").then((r) => r.data);
@@ -42,8 +71,7 @@ export const listKnowledge = () => http.get("/knowledge").then((r) => r.data);
 export const getKnowledge = (id) => http.get(`/knowledge/${id}`).then((r) => r.data);
 export const deleteKnowledge = (id) => http.delete(`/knowledge/${id}`).then((r) => r.data);
 
-export const listContent = (type, status) =>
-  http.get("/content", { params: { type, status } }).then((r) => r.data);
+export const listContent = (type, status) => http.get("/content", { params: { type, status } }).then((r) => r.data);
 export const getContent = (id) => http.get(`/content/${id}`).then((r) => r.data);
 export const saveContent = (payload) => http.post("/content", payload).then((r) => r.data);
 export const updateContent = (id, payload) => http.put(`/content/${id}`, payload).then((r) => r.data);
@@ -52,3 +80,15 @@ export const deleteContent = (id) => http.delete(`/content/${id}`).then((r) => r
 
 export const exportUrl = (id, format) => `${API}/export/${id}?format=${format}`;
 export const fetchExportText = (id, format) => http.get(`/export/${id}`, { params: { format }, responseType: "text" }).then((r) => r.data);
+export const downloadExport = async (id, format, filename) => {
+  const res = await http.get(`/export/${id}`, { params: { format }, responseType: "blob" });
+  const url = URL.createObjectURL(res.data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename || `export.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+export { http };

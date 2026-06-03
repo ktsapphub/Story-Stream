@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -9,6 +8,7 @@ import { Upload, Sparkles, Copy, Trash2, Image as ImageIcon, Loader2, Film } fro
 import { toast } from "sonner";
 import { MediaInsertDialog } from "@/components/MediaInsertDialog";
 import { listMedia, uploadMedia, deleteMedia, absUrl } from "@/lib/api";
+import { mediaBadgeClass } from "@/lib/ui";
 
 export default function MediaLibrary() {
   const [items, setItems] = useState([]);
@@ -81,8 +81,8 @@ export default function MediaLibrary() {
               </div>
               <div className="p-2">
                 <div className="flex items-center gap-1.5">
-                  <Badge variant="secondary" className="rounded-full text-[10px] capitalize">{m.source}</Badge>
-                  <span className="text-[11px] text-muted-foreground truncate">{m.media_type}</span>
+                  <span className={`cs-badge ${mediaBadgeClass(m.media_type)} capitalize`} data-testid="media-type-badge">{m.media_type}</span>
+                  <span className="text-[11px] text-muted-foreground truncate capitalize">{m.source}</span>
                 </div>
               </div>
             </Card>

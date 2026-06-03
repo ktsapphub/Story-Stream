@@ -1,5 +1,6 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, Form, HTTPException, Query
+from fastapi import FastAPI, APIRouter, UploadFile, File, Form, HTTPException, Query, Depends
 from fastapi.responses import Response
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -7,9 +8,8 @@ import os
 import logging
 import asyncio
 import uuid
-import base64
 from pathlib import Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 from datetime import datetime, timezone
 
@@ -20,14 +20,20 @@ import storage as storage_mod
 import llm_service as llm
 import knowledge as kb
 import exporters
+import auth
 
-# MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "mydatejar@gmail.com").lower()
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Test1234")
+AUTH_BYPASS = os.environ.get("ENABLE_TEST_BYPASS", "false").lower() == "true"
+BYPASS_TOKEN = "cs-test-bypass"
+
 app = FastAPI(title="Content Studio API")
 api_router = APIRouter(prefix="/api")
+bearer = HTTPBearer(auto_error=False)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -44,7 +50,45 @@ def clean(doc):
     return doc
 
 
+def public_user(u):
+    if not u:
+        return u
+    u = dict(u)
+    u.pop("_id", None)
+    u.pop("password_hash", None)
+    return u
+
+
+# ----------------------- Auth dependency -----------------------
+async def get_current_user(creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer)):
+    token = creds.credentials if creds else None
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if AUTH_BYPASS and token == BYPASS_TOKEN:
+        u = await db.users.find_one({"email": ADMIN_EMAIL})
+        if u:
+            return public_user(u)
+    payload = auth.decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    u = await db.users.find_one({"id": payload["sub"]})
+    if not u:
+        raise HTTPException(status_code=401, detail="User not found")
+    return public_user(u)
+
+
 # ----------------------- Models -----------------------
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+    name: Optional[str] = None
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
 class GenerateBlogRequest(BaseModel):
     topic: str
     model_key: str = llm.DEFAULT_MODEL
@@ -120,22 +164,20 @@ class SaveContentRequest(BaseModel):
 
 
 # ----------------------- Helpers -----------------------
-async def build_reference_context(source_ids: List[str]) -> str:
+async def build_reference_context(source_ids: List[str], owner: str) -> str:
     if not source_ids:
         return ""
-    docs = await db.knowledge.find({"id": {"$in": source_ids}, "is_deleted": {"$ne": True}}, {"_id": 0}).to_list(50)
+    docs = await db.knowledge.find({"id": {"$in": source_ids}, "owner": owner, "is_deleted": {"$ne": True}}, {"_id": 0}).to_list(50)
     parts = []
     for d in docs:
-        title = d.get("title", "")
-        summary = d.get("summary", "")
-        content = d.get("content", "")
-        parts.append(f"SOURCE: {title}\nSUMMARY: {summary}\nCONTENT:\n{content[:3000]}")
+        parts.append(f"SOURCE: {d.get('title','')}\nSUMMARY: {d.get('summary','')}\nCONTENT:\n{d.get('content','')[:3000]}")
     return "\n\n---\n\n".join(parts)
 
 
-def make_content_doc(data: dict, ctype: str, model_key: str) -> dict:
+def make_content_doc(data: dict, ctype: str, model_key: str, owner: str) -> dict:
     return {
         "id": str(uuid.uuid4()),
+        "owner": owner,
         "type": ctype,
         "title": data.get("title", ""),
         "slug": data.get("slug", ""),
@@ -157,12 +199,13 @@ def make_content_doc(data: dict, ctype: str, model_key: str) -> dict:
     }
 
 
-async def store_image_bytes(img_bytes: bytes, ext: str, mime: str, source: str, prompt: str = "") -> dict:
+async def store_image_bytes(img_bytes: bytes, ext: str, mime: str, source: str, owner: str, prompt: str = "") -> dict:
     path = f"{storage_mod.APP_NAME}/media/{uuid.uuid4()}.{ext}"
     result = await asyncio.to_thread(storage_mod.put_object, path, img_bytes, mime)
     stored_path = result["path"]
     media = {
         "id": str(uuid.uuid4()),
+        "owner": owner,
         "storage_path": stored_path,
         "url": f"/api/files/{stored_path}",
         "original_filename": f"{source}.{ext}",
@@ -179,40 +222,81 @@ async def store_image_bytes(img_bytes: bytes, ext: str, mime: str, source: str, 
     return clean(media)
 
 
-# ----------------------- Routes: meta -----------------------
+# ----------------------- Auth routes -----------------------
+@api_router.post("/auth/register")
+async def register(req: RegisterRequest):
+    email = req.email.lower()
+    if await db.users.find_one({"email": email}):
+        raise HTTPException(status_code=400, detail="An account with this email already exists")
+    user = {
+        "id": str(uuid.uuid4()),
+        "email": email,
+        "password_hash": auth.hash_password(req.password),
+        "name": req.name or email.split("@")[0],
+        "role": "user",
+        "created_at": now_iso(),
+    }
+    await db.users.insert_one(dict(user))
+    token = auth.create_access_token(user["id"], email)
+    return {"token": token, "user": public_user(user)}
+
+
+@api_router.post("/auth/login")
+async def login(req: LoginRequest):
+    email = req.email.lower()
+    u = await db.users.find_one({"email": email})
+    if not u or not auth.verify_password(req.password, u["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    token = auth.create_access_token(u["id"], email)
+    return {"token": token, "user": public_user(u)}
+
+
+@api_router.get("/auth/me")
+async def me(user: dict = Depends(get_current_user)):
+    return user
+
+
+@api_router.post("/auth/logout")
+async def logout(user: dict = Depends(get_current_user)):
+    return {"ok": True}
+
+
+# ----------------------- Meta -----------------------
 @api_router.get("/")
 async def root():
     return {"message": "Content Studio API", "status": "ok"}
 
 
 @api_router.get("/models")
-async def get_models():
+async def get_models(user: dict = Depends(get_current_user)):
     return {"models": llm.list_models(), "default": llm.DEFAULT_MODEL}
 
 
-# ----------------------- Routes: generation -----------------------
+# ----------------------- Generation -----------------------
 @api_router.post("/generate/blog")
-async def generate_blog(req: GenerateBlogRequest):
+async def generate_blog(req: GenerateBlogRequest, user: dict = Depends(get_current_user)):
     try:
-        ref = await build_reference_context(req.reference_source_ids)
+        ref = await build_reference_context(req.reference_source_ids, user["id"])
         data = await llm.generate_blog(req.topic, req.model_key, req.tone, req.length, ref)
     except Exception as e:
         logger.exception("blog generation failed")
         raise HTTPException(status_code=500, detail=f"Generation failed: {e}")
-    doc = make_content_doc(data, "blog", req.model_key)
+    doc = make_content_doc(data, "blog", req.model_key, user["id"])
     if req.save:
         await db.content.insert_one(dict(doc))
     return clean(doc)
 
 
 @api_router.post("/generate/blog/batch")
-async def generate_blog_batch(req: BatchRequest):
+async def generate_blog_batch(req: BatchRequest, user: dict = Depends(get_current_user)):
     topics = [t for t in req.topics if t and t.strip()][:10]
     if not topics:
         raise HTTPException(status_code=400, detail="Provide at least one topic")
+    owner = user["id"]
     job_id = str(uuid.uuid4())
     job = {
         "id": job_id,
+        "owner": owner,
         "status": "running",
         "total": len(topics),
         "completed": 0,
@@ -224,19 +308,15 @@ async def generate_blog_batch(req: BatchRequest):
     await db.jobs.insert_one(dict(job))
 
     async def run():
-        ref = await build_reference_context(req.reference_source_ids)
+        ref = await build_reference_context(req.reference_source_ids, owner)
 
         async def on_item(idx, result, exc):
             if exc is not None:
                 update = {f"items.{idx}.status": "failed", f"items.{idx}.error": str(exc)[:200]}
             else:
-                doc = make_content_doc(result, "blog", req.model_key)
+                doc = make_content_doc(result, "blog", req.model_key, owner)
                 await db.content.insert_one(dict(doc))
-                update = {
-                    f"items.{idx}.status": "complete",
-                    f"items.{idx}.content_id": doc["id"],
-                    f"items.{idx}.title": doc["title"],
-                }
+                update = {f"items.{idx}.status": "complete", f"items.{idx}.content_id": doc["id"], f"items.{idx}.title": doc["title"]}
             await db.jobs.update_one({"id": job_id}, {"$set": update, "$inc": {"completed": 1}})
 
         await db.jobs.update_one({"id": job_id}, {"$set": {f"items.{i}.status": "generating" for i in range(len(topics))}})
@@ -250,25 +330,22 @@ async def generate_blog_batch(req: BatchRequest):
 
 
 @api_router.get("/jobs/{job_id}")
-async def get_job(job_id: str):
-    job = await db.jobs.find_one({"id": job_id}, {"_id": 0})
+async def get_job(job_id: str, user: dict = Depends(get_current_user)):
+    job = await db.jobs.find_one({"id": job_id, "owner": user["id"]}, {"_id": 0})
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
 
 
 @api_router.post("/score")
-async def score(req: ScoreRequest):
+async def score(req: ScoreRequest, user: dict = Depends(get_current_user)):
     title, body = req.title, req.body
     if req.content_id:
-        content = await db.content.find_one({"id": req.content_id}, {"_id": 0})
+        content = await db.content.find_one({"id": req.content_id, "owner": user["id"]}, {"_id": 0})
         if not content:
             raise HTTPException(status_code=404, detail="Content not found")
         title = content.get("title", "")
-        if content.get("type") == "newsletter" and content.get("newsletter"):
-            body = exporters.content_to_markdown(content)
-        else:
-            body = content.get("body_markdown", "")
+        body = exporters.content_to_markdown(content) if content.get("type") == "newsletter" else content.get("body_markdown", "")
     if not body:
         raise HTTPException(status_code=400, detail="No content to score")
     try:
@@ -277,13 +354,13 @@ async def score(req: ScoreRequest):
         logger.exception("scoring failed")
         raise HTTPException(status_code=500, detail=f"Scoring failed: {e}")
     if req.content_id:
-        await db.content.update_one({"id": req.content_id}, {"$set": {"quality_score": result, "updated_at": now_iso()}})
+        await db.content.update_one({"id": req.content_id, "owner": user["id"]}, {"$set": {"quality_score": result, "updated_at": now_iso()}})
     return result
 
 
 @api_router.post("/generate/newsletter/from-blog")
-async def newsletter_from_blog(req: NewsletterFromBlogRequest):
-    blog = await db.content.find_one({"id": req.blog_content_id}, {"_id": 0})
+async def newsletter_from_blog(req: NewsletterFromBlogRequest, user: dict = Depends(get_current_user)):
+    blog = await db.content.find_one({"id": req.blog_content_id, "owner": user["id"]}, {"_id": 0})
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
     try:
@@ -298,16 +375,16 @@ async def newsletter_from_blog(req: NewsletterFromBlogRequest):
         "header_image": blog.get("header_image"),
         "source_blog_id": blog["id"],
         "tags": blog.get("tags", []),
-    }, "newsletter", req.model_key)
+    }, "newsletter", req.model_key, user["id"])
     if req.save:
         await db.content.insert_one(dict(doc))
     return clean(doc)
 
 
 @api_router.post("/generate/newsletter")
-async def newsletter_from_prompt(req: NewsletterFromPromptRequest):
+async def newsletter_from_prompt(req: NewsletterFromPromptRequest, user: dict = Depends(get_current_user)):
     try:
-        ref = await build_reference_context(req.reference_source_ids)
+        ref = await build_reference_context(req.reference_source_ids, user["id"])
         nl = await llm.generate_newsletter(req.topic, req.model_key, req.tone, ref)
     except Exception as e:
         logger.exception("newsletter generation failed")
@@ -316,31 +393,31 @@ async def newsletter_from_prompt(req: NewsletterFromPromptRequest):
         "title": nl.get("title", nl.get("subject", "")),
         "excerpt": nl.get("excerpt", ""),
         "newsletter": nl,
-    }, "newsletter", req.model_key)
+    }, "newsletter", req.model_key, user["id"])
     if req.save:
         await db.content.insert_one(dict(doc))
     return clean(doc)
 
 
 @api_router.post("/generate/image")
-async def generate_image(req: GenerateImageRequest):
+async def generate_image(req: GenerateImageRequest, user: dict = Depends(get_current_user)):
     try:
         img = await llm.generate_image(req.prompt)
     except Exception as e:
         logger.exception("image generation failed")
         raise HTTPException(status_code=500, detail=f"Image generation failed: {e}")
-    media = await store_image_bytes(img["bytes"], img["ext"], img["mime_type"], "generated", req.prompt)
+    media = await store_image_bytes(img["bytes"], img["ext"], img["mime_type"], "generated", user["id"], req.prompt)
     if req.content_id and req.as_header:
         await db.content.update_one(
-            {"id": req.content_id},
+            {"id": req.content_id, "owner": user["id"]},
             {"$set": {"header_image": {"media_id": media["id"], "url": media["url"]}, "updated_at": now_iso()}},
         )
     return media
 
 
-# ----------------------- Routes: media -----------------------
+# ----------------------- Media -----------------------
 @api_router.post("/media/upload")
-async def media_upload(file: UploadFile = File(...), title: str = Form(None)):
+async def media_upload(file: UploadFile = File(...), title: str = Form(None), user: dict = Depends(get_current_user)):
     data = await file.read()
     if len(data) > 50 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large (max 50MB)")
@@ -352,11 +429,11 @@ async def media_upload(file: UploadFile = File(...), title: str = Form(None)):
     except Exception as e:
         logger.exception("upload failed")
         raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
-    stored_path = result["path"]
     media = {
         "id": str(uuid.uuid4()),
-        "storage_path": stored_path,
-        "url": f"/api/files/{stored_path}",
+        "owner": user["id"],
+        "storage_path": result["path"],
+        "url": f"/api/files/{result['path']}",
         "original_filename": file.filename,
         "content_type": ct,
         "size": result.get("size", len(data)),
@@ -372,7 +449,7 @@ async def media_upload(file: UploadFile = File(...), title: str = Form(None)):
 
 
 @api_router.post("/media/from-url")
-async def media_from_url(req: MediaFromUrlRequest):
+async def media_from_url(req: MediaFromUrlRequest, user: dict = Depends(get_current_user)):
     url = req.url.strip()
     mtype = req.media_type
     if not mtype:
@@ -387,6 +464,7 @@ async def media_from_url(req: MediaFromUrlRequest):
             mtype = "image"
     media = {
         "id": str(uuid.uuid4()),
+        "owner": user["id"],
         "storage_path": None,
         "url": url,
         "original_filename": req.title or url,
@@ -404,22 +482,22 @@ async def media_from_url(req: MediaFromUrlRequest):
 
 
 @api_router.get("/media")
-async def list_media(media_type: Optional[str] = None):
-    q = {"is_deleted": {"$ne": True}}
+async def list_media(media_type: Optional[str] = None, user: dict = Depends(get_current_user)):
+    q = {"owner": user["id"], "is_deleted": {"$ne": True}}
     if media_type and media_type != "all":
         q["media_type"] = media_type
-    items = await db.media.find(q, {"_id": 0}).sort("created_at", -1).to_list(500)
-    return items
+    return await db.media.find(q, {"_id": 0}).sort("created_at", -1).to_list(500)
 
 
 @api_router.delete("/media/{media_id}")
-async def delete_media(media_id: str):
-    await db.media.update_one({"id": media_id}, {"$set": {"is_deleted": True}})
+async def delete_media(media_id: str, user: dict = Depends(get_current_user)):
+    await db.media.update_one({"id": media_id, "owner": user["id"]}, {"$set": {"is_deleted": True}})
     return {"ok": True}
 
 
 @api_router.get("/files/{path:path}")
 async def serve_file(path: str):
+    """Public file serving so <img> tags work (paths are unguessable UUIDs)."""
     record = await db.media.find_one({"storage_path": path, "is_deleted": {"$ne": True}}, {"_id": 0})
     try:
         data, content_type = await asyncio.to_thread(storage_mod.get_object, path)
@@ -429,9 +507,9 @@ async def serve_file(path: str):
     return Response(content=data, media_type=ct, headers={"Cache-Control": "public, max-age=86400"})
 
 
-# ----------------------- Routes: knowledge base -----------------------
+# ----------------------- Knowledge base -----------------------
 @api_router.post("/knowledge/url")
-async def knowledge_add_url(req: KnowledgeUrlRequest):
+async def knowledge_add_url(req: KnowledgeUrlRequest, user: dict = Depends(get_current_user)):
     try:
         scraped = await asyncio.to_thread(kb.scrape_url, req.url)
     except Exception as e:
@@ -440,6 +518,7 @@ async def knowledge_add_url(req: KnowledgeUrlRequest):
     analysis = await llm.summarize_source(scraped["content"])
     doc = {
         "id": str(uuid.uuid4()),
+        "owner": user["id"],
         "type": "url",
         "title": scraped["title"],
         "source_url": req.url,
@@ -457,7 +536,7 @@ async def knowledge_add_url(req: KnowledgeUrlRequest):
 
 
 @api_router.post("/knowledge/upload")
-async def knowledge_upload(file: UploadFile = File(...)):
+async def knowledge_upload(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
     data = await file.read()
     text = await asyncio.to_thread(kb.extract_document, file.filename, data)
     if not text.strip():
@@ -465,6 +544,7 @@ async def knowledge_upload(file: UploadFile = File(...)):
     analysis = await llm.summarize_source(text)
     doc = {
         "id": str(uuid.uuid4()),
+        "owner": user["id"],
         "type": "document",
         "title": file.filename,
         "source_url": None,
@@ -482,95 +562,87 @@ async def knowledge_upload(file: UploadFile = File(...)):
 
 
 @api_router.get("/knowledge")
-async def list_knowledge():
-    items = await db.knowledge.find({"is_deleted": {"$ne": True}}, {"_id": 0, "content": 0}).sort("created_at", -1).to_list(500)
-    return items
+async def list_knowledge(user: dict = Depends(get_current_user)):
+    return await db.knowledge.find({"owner": user["id"], "is_deleted": {"$ne": True}}, {"_id": 0, "content": 0}).sort("created_at", -1).to_list(500)
 
 
 @api_router.get("/knowledge/{source_id}")
-async def get_knowledge(source_id: str):
-    doc = await db.knowledge.find_one({"id": source_id}, {"_id": 0})
+async def get_knowledge(source_id: str, user: dict = Depends(get_current_user)):
+    doc = await db.knowledge.find_one({"id": source_id, "owner": user["id"]}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Source not found")
     return doc
 
 
 @api_router.delete("/knowledge/{source_id}")
-async def delete_knowledge(source_id: str):
-    await db.knowledge.update_one({"id": source_id}, {"$set": {"is_deleted": True}})
+async def delete_knowledge(source_id: str, user: dict = Depends(get_current_user)):
+    await db.knowledge.update_one({"id": source_id, "owner": user["id"]}, {"$set": {"is_deleted": True}})
     return {"ok": True}
 
 
-# ----------------------- Routes: content CRUD -----------------------
+# ----------------------- Content CRUD -----------------------
 @api_router.get("/content")
-async def list_content(type: Optional[str] = None, status: Optional[str] = None):
-    q = {"is_deleted": {"$ne": True}}
+async def list_content(type: Optional[str] = None, status: Optional[str] = None, user: dict = Depends(get_current_user)):
+    q = {"owner": user["id"], "is_deleted": {"$ne": True}}
     if type and type != "all":
         q["type"] = type
     if status and status != "all":
         q["status"] = status
-    items = await db.content.find(q, {"_id": 0}).sort("updated_at", -1).to_list(1000)
-    return items
+    return await db.content.find(q, {"_id": 0}).sort("updated_at", -1).to_list(1000)
 
 
 @api_router.get("/content/{content_id}")
-async def get_content(content_id: str):
-    doc = await db.content.find_one({"id": content_id}, {"_id": 0})
+async def get_content(content_id: str, user: dict = Depends(get_current_user)):
+    doc = await db.content.find_one({"id": content_id, "owner": user["id"]}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Content not found")
     return doc
 
 
 @api_router.post("/content")
-async def save_content(req: SaveContentRequest):
+async def save_content(req: SaveContentRequest, user: dict = Depends(get_current_user)):
     payload = req.model_dump()
     cid = payload.get("id")
     if cid:
-        existing = await db.content.find_one({"id": cid})
+        existing = await db.content.find_one({"id": cid, "owner": user["id"]})
         if existing:
             payload["updated_at"] = now_iso()
             payload.pop("id", None)
-            await db.content.update_one({"id": cid}, {"$set": payload})
+            await db.content.update_one({"id": cid, "owner": user["id"]}, {"$set": payload})
             return await db.content.find_one({"id": cid}, {"_id": 0})
-    doc = {
-        **payload,
-        "id": str(uuid.uuid4()),
-        "is_deleted": False,
-        "created_at": now_iso(),
-        "updated_at": now_iso(),
-    }
+    doc = {**payload, "id": str(uuid.uuid4()), "owner": user["id"], "is_deleted": False, "created_at": now_iso(), "updated_at": now_iso()}
     await db.content.insert_one(dict(doc))
     return clean(doc)
 
 
 @api_router.put("/content/{content_id}")
-async def update_content(content_id: str, req: SaveContentRequest):
-    existing = await db.content.find_one({"id": content_id})
+async def update_content(content_id: str, req: SaveContentRequest, user: dict = Depends(get_current_user)):
+    existing = await db.content.find_one({"id": content_id, "owner": user["id"]})
     if not existing:
         raise HTTPException(status_code=404, detail="Content not found")
     payload = req.model_dump()
     payload.pop("id", None)
     payload["updated_at"] = now_iso()
-    await db.content.update_one({"id": content_id}, {"$set": payload})
+    await db.content.update_one({"id": content_id, "owner": user["id"]}, {"$set": payload})
     return await db.content.find_one({"id": content_id}, {"_id": 0})
 
 
 @api_router.post("/content/{content_id}/status")
-async def set_status(content_id: str, status: str = Query(...)):
-    await db.content.update_one({"id": content_id}, {"$set": {"status": status, "updated_at": now_iso()}})
+async def set_status(content_id: str, status: str = Query(...), user: dict = Depends(get_current_user)):
+    await db.content.update_one({"id": content_id, "owner": user["id"]}, {"$set": {"status": status, "updated_at": now_iso()}})
     return {"ok": True}
 
 
 @api_router.delete("/content/{content_id}")
-async def delete_content(content_id: str):
-    await db.content.update_one({"id": content_id}, {"$set": {"is_deleted": True}})
+async def delete_content(content_id: str, user: dict = Depends(get_current_user)):
+    await db.content.update_one({"id": content_id, "owner": user["id"]}, {"$set": {"is_deleted": True}})
     return {"ok": True}
 
 
-# ----------------------- Routes: export -----------------------
+# ----------------------- Export -----------------------
 @api_router.get("/export/{content_id}")
-async def export(content_id: str, format: str = Query("html")):
-    content = await db.content.find_one({"id": content_id}, {"_id": 0})
+async def export(content_id: str, format: str = Query("html"), user: dict = Depends(get_current_user)):
+    content = await db.content.find_one({"id": content_id, "owner": user["id"]}, {"_id": 0})
     if not content:
         raise HTTPException(status_code=404, detail="Content not found")
     try:
@@ -580,32 +652,25 @@ async def export(content_id: str, format: str = Query("html")):
         raise HTTPException(status_code=500, detail=f"Export failed: {e}")
     slug = content.get("slug") or content.get("title", "content")
     safe = "".join(c if c.isalnum() or c in "-_" else "-" for c in (slug or "content"))[:60] or "content"
-    filename = f"{safe}.{ext}"
-    return Response(
-        content=data,
-        media_type=content_type,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
+    return Response(content=data, media_type=content_type,
+                    headers={"Content-Disposition": f'attachment; filename="{safe}.{ext}"'})
 
 
-# ----------------------- Routes: dashboard stats -----------------------
+# ----------------------- Stats -----------------------
 @api_router.get("/stats")
-async def stats():
-    base = {"is_deleted": {"$ne": True}}
+async def stats(user: dict = Depends(get_current_user)):
+    base = {"owner": user["id"], "is_deleted": {"$ne": True}}
     blogs = await db.content.count_documents({**base, "type": "blog"})
     newsletters = await db.content.count_documents({**base, "type": "newsletter"})
     published = await db.content.count_documents({**base, "status": "published"})
-    media_count = await db.media.count_documents({"is_deleted": {"$ne": True}})
-    sources = await db.knowledge.count_documents({"is_deleted": {"$ne": True}})
+    media_count = await db.media.count_documents({"owner": user["id"], "is_deleted": {"$ne": True}})
+    sources = await db.knowledge.count_documents({"owner": user["id"], "is_deleted": {"$ne": True}})
     scored = await db.content.find({**base, "quality_score": {"$ne": None}}, {"_id": 0, "quality_score": 1}).to_list(1000)
     avg = 0
     if scored:
         vals = [s["quality_score"].get("overall_score", 0) for s in scored if s.get("quality_score")]
         avg = round(sum(vals) / len(vals)) if vals else 0
-    return {
-        "blogs": blogs, "newsletters": newsletters, "published": published,
-        "media": media_count, "sources": sources, "avg_score": avg,
-    }
+    return {"blogs": blogs, "newsletters": newsletters, "published": published, "media": media_count, "sources": sources, "avg_score": avg}
 
 
 app.include_router(api_router)
@@ -619,13 +684,40 @@ app.add_middleware(
 )
 
 
+async def seed_admin_and_migrate():
+    existing = await db.users.find_one({"email": ADMIN_EMAIL})
+    if existing is None:
+        uid = str(uuid.uuid4())
+        await db.users.insert_one({
+            "id": uid, "email": ADMIN_EMAIL,
+            "password_hash": auth.hash_password(ADMIN_PASSWORD),
+            "name": "My Date Jar", "role": "admin", "created_at": now_iso(),
+        })
+        logger.info("Seed admin user created")
+    else:
+        uid = existing["id"]
+        if not auth.verify_password(ADMIN_PASSWORD, existing["password_hash"]):
+            await db.users.update_one({"email": ADMIN_EMAIL}, {"$set": {"password_hash": auth.hash_password(ADMIN_PASSWORD)}})
+    # Migrate pre-auth orphan documents to the seed user
+    for coll in (db.content, db.media, db.knowledge):
+        await coll.update_many({"owner": {"$exists": False}}, {"$set": {"owner": uid}})
+
+
 @app.on_event("startup")
 async def on_startup():
+    try:
+        await db.users.create_index("email", unique=True)
+    except Exception as e:
+        logger.warning(f"index: {e}")
     try:
         await asyncio.to_thread(storage_mod.init_storage)
         logger.info("Storage initialized at startup")
     except Exception as e:
         logger.error(f"Storage init failed: {e}")
+    try:
+        await seed_admin_and_migrate()
+    except Exception as e:
+        logger.error(f"Seed failed: {e}")
 
 
 @app.on_event("shutdown")

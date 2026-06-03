@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -17,6 +16,7 @@ import { Pencil, Download, Trash2, Send, RotateCcw, Library as LibraryIcon } fro
 import { toast } from "sonner";
 import { ExportModal } from "@/components/ExportModal";
 import { listContent, deleteContent, setStatus } from "@/lib/api";
+import { typeBadgeClass, statusBadgeClass } from "@/lib/ui";
 
 export default function ContentLibrary() {
   const navigate = useNavigate();
@@ -94,11 +94,11 @@ export default function ContentLibrary() {
                       <button className="text-left font-medium hover:text-primary line-clamp-1" onClick={() => openEditor(c)} data-testid={`library-title-${c.id}`}>{c.title || "Untitled"}</button>
                       <div className="text-xs text-muted-foreground line-clamp-1">{c.excerpt || c.meta_description}</div>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell"><Badge variant="secondary" className="rounded-full capitalize">{c.type}</Badge></TableCell>
+                    <TableCell className="hidden sm:table-cell"><span className={`cs-badge ${typeBadgeClass(c.type)} capitalize`} data-testid="content-type-badge">{c.type}</span></TableCell>
                     <TableCell className="hidden sm:table-cell">
-                      <Badge className="rounded-full" style={{ background: c.status === "published" ? "hsl(168 35% 90%)" : "hsl(28 35% 90%)", color: c.status === "published" ? "hsl(168 35% 28%)" : "hsl(22 55% 30%)" }}>{c.status}</Badge>
+                      <span className={`cs-badge ${statusBadgeClass(c.status)}`} data-testid="status-badge">{c.status}</span>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">{c.quality_score ? <Badge variant="outline" className="rounded-full">{c.quality_score.overall_score}</Badge> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
+                    <TableCell className="hidden md:table-cell">{c.quality_score ? <span className="cs-badge badge-published">{c.quality_score.overall_score}</span> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEditor(c)} data-testid={`library-edit-${c.id}`}><Pencil className="h-4 w-4" /></Button>

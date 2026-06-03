@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/select";
 import { Sparkles, BookOpen, Loader2 } from "lucide-react";
 import { listKnowledge } from "@/lib/api";
+import { providerOf } from "@/lib/ui";
+
+const PROVIDER_DOT = { openai: "--accent-openai", anthropic: "--accent-anthropic", gemini: "--accent-gemini" };
 
 const TONES = ["warm and engaging", "playful and fun", "professional", "romantic", "inspirational", "conversational"];
 
@@ -86,7 +89,12 @@ export const PromptComposer = ({
             <SelectTrigger className="rounded-xl" data-testid="prompt-composer-model-select"><SelectValue placeholder="Model" /></SelectTrigger>
             <SelectContent>
               {models.map((m) => (
-                <SelectItem key={m.key} value={m.key}>{m.label}</SelectItem>
+                <SelectItem key={m.key} value={m.key}>
+                  <span className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full" style={{ background: `hsl(var(${PROVIDER_DOT[providerOf(m.key)]}))` }} />
+                    {m.label}
+                  </span>
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>

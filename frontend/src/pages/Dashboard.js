@@ -8,6 +8,7 @@ import {
   Gauge, ArrowRight, Sparkles,
 } from "lucide-react";
 import { getStats, listContent } from "@/lib/api";
+import { typeBadgeClass, statusBadgeClass } from "@/lib/ui";
 
 const StatCard = ({ icon: Icon, label, value, accent }) => (
   <Card className="cs-card p-4 flex items-center gap-3" data-testid={`stat-${label.toLowerCase().replace(/ /g, "-")}`}>
@@ -79,9 +80,9 @@ export default function Dashboard() {
                 data-testid={`recent-content-${c.id}`}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="secondary" className="rounded-full capitalize">{c.type}</Badge>
-                  <Badge className="rounded-full" style={{ background: c.status === "published" ? "hsl(168 35% 90%)" : "hsl(28 35% 90%)", color: c.status === "published" ? "hsl(168 35% 28%)" : "hsl(22 55% 30%)" }}>{c.status}</Badge>
-                  {c.quality_score && <Badge variant="outline" className="rounded-full ml-auto">{c.quality_score.overall_score}</Badge>}
+                  <span className={`cs-badge ${typeBadgeClass(c.type)} capitalize`} data-testid="content-type-badge">{c.type}</span>
+                  <span className={`cs-badge ${statusBadgeClass(c.status)}`} data-testid="status-badge">{c.status}</span>
+                  {c.quality_score && <span className="cs-badge badge-published ml-auto">{c.quality_score.overall_score}</span>}
                 </div>
                 <h3 className="font-display font-semibold line-clamp-2">{c.title || "Untitled"}</h3>
                 <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{c.excerpt || c.meta_description}</p>

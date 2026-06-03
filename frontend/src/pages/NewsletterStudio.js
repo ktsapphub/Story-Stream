@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Save, Download, ArrowLeft, Plus, Trash2, Loader2, FileText, ArrowRight, Mail,
@@ -137,8 +136,8 @@ export default function NewsletterStudio() {
         <div className="flex-1 min-w-0">
           <h1 className="font-display text-2xl font-semibold truncate flex items-center gap-2"><Mail className="h-5 w-5 text-primary" /> {nl.subject || content.title || "Newsletter"}</h1>
           <div className="flex items-center gap-2 mt-1">
-            <Badge variant="secondary" className="rounded-full capitalize">{content.status}</Badge>
-            {content.source_blog_id && <Badge variant="outline" className="rounded-full">from blog</Badge>}
+            <span className={`cs-badge ${content.status === "published" ? "badge-published" : "badge-draft"}`} data-testid="status-badge">{content.status}</span>
+            {content.source_blog_id && <span className="cs-badge badge-blog">from blog</span>}
           </div>
         </div>
         <div className="flex items-center gap-2">

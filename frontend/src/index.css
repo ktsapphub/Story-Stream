@@ -2,9 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-synthesis-weight: none;
-}
+:root { font-synthesis-weight: none; }
 
 body {
   margin: 0;
@@ -13,42 +11,75 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-code, .font-mono {
-  font-family: "IBM Plex Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
-}
+code, .font-mono { font-family: "IBM Plex Mono", Menlo, Monaco, Consolas, "Courier New", monospace; }
 
 @layer base {
   :root {
-    --background: 32 45% 98%;
-    --foreground: 24 22% 12%;
-    --card: 30 40% 99%;
-    --card-foreground: 24 22% 12%;
-    --popover: 30 40% 99%;
-    --popover-foreground: 24 22% 12%;
-    --primary: 22 55% 32%;
-    --primary-foreground: 30 40% 99%;
-    --secondary: 28 35% 94%;
-    --secondary-foreground: 24 22% 16%;
-    --muted: 28 30% 95%;
-    --muted-foreground: 24 10% 42%;
-    --accent: 10 55% 92%;
-    --accent-foreground: 22 55% 26%;
-    --destructive: 0 72% 52%;
-    --destructive-foreground: 30 40% 99%;
-    --border: 26 22% 88%;
-    --input: 26 22% 88%;
-    --ring: 22 55% 32%;
-    --chart-1: 22 55% 40%;
-    --chart-2: 168 35% 34%;
-    --chart-3: 10 55% 52%;
-    --chart-4: 42 65% 52%;
-    --chart-5: 200 45% 42%;
-    --radius: 0.9rem;
-    --shadow-sm: 0 1px 2px rgba(69, 46, 22, 0.06);
-    --shadow-md: 0 10px 30px rgba(69, 46, 22, 0.10);
-    --shadow-focus: 0 0 0 4px rgba(166, 110, 54, 0.18);
-    --sage: 168 35% 34%;
-    --caramel: 28 51% 43%;
+    --background: 34 60% 98%;
+    --foreground: 24 28% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 24 28% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 28% 10%;
+    --primary: 22 62% 30%;
+    --primary-foreground: 34 60% 98%;
+    --secondary: 30 35% 92%;
+    --secondary-foreground: 24 25% 14%;
+    --muted: 30 30% 94%;
+    --muted-foreground: 24 12% 38%;
+    --accent: 18 70% 92%;
+    --accent-foreground: 22 62% 24%;
+    --destructive: 0 74% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 24 18% 84%;
+    --input: 24 18% 84%;
+    --ring: 22 62% 30%;
+    --chart-1: 22 62% 38%;
+    --chart-2: 174 52% 32%;
+    --chart-3: 8 78% 56%;
+    --chart-4: 42 85% 52%;
+    --chart-5: 206 62% 44%;
+    --radius: 0.95rem;
+    --shadow-sm: 0 1px 2px rgba(36, 23, 15, 0.06);
+    --shadow-md: 0 14px 40px rgba(36, 23, 15, 0.10);
+    --shadow-focus: 0 0 0 4px rgba(122, 63, 29, 0.18);
+
+    --surface-2: 30 35% 96%;
+    --surface-3: 30 35% 92%;
+
+    /* semantic accents */
+    --accent-dashboard: 206 62% 44%;
+    --accent-blog: 22 62% 38%;
+    --accent-newsletter: 174 52% 32%;
+    --accent-content-library: 262 38% 52%;
+    --accent-media-library: 8 78% 56%;
+    --accent-knowledge-base: 42 85% 46%;
+
+    --accent-draft: 24 12% 38%;
+    --accent-published: 152 52% 34%;
+    --accent-queued: 206 62% 44%;
+    --accent-generating: 42 85% 46%;
+    --accent-complete: 152 52% 34%;
+    --accent-failed: 0 74% 52%;
+
+    --accent-openai: 174 52% 32%;
+    --accent-anthropic: 22 62% 38%;
+    --accent-gemini: 206 62% 44%;
+
+    --accent-score-excellent: 152 52% 34%;
+    --accent-score-good: 42 85% 46%;
+    --accent-score-needs-work: 8 78% 56%;
+
+    --accent-export-html: 206 62% 44%;
+    --accent-export-markdown: 262 38% 52%;
+    --accent-export-wordpress: 174 52% 32%;
+    --accent-export-csv: 152 52% 34%;
+    --accent-export-pdf: 0 74% 52%;
+    --accent-export-txt: 24 12% 38%;
+
+    --accent-media-image: 22 62% 38%;
+    --accent-media-gif: 262 38% 52%;
+    --accent-media-video: 206 62% 44%;
   }
 
   .dark {
@@ -58,7 +89,7 @@ code, .font-mono {
     --card-foreground: 30 30% 94%;
     --popover: 24 24% 11%;
     --popover-foreground: 30 30% 94%;
-    --primary: 28 60% 62%;
+    --primary: 28 70% 60%;
     --primary-foreground: 24 26% 10%;
     --secondary: 24 18% 18%;
     --secondary-foreground: 30 30% 94%;
@@ -70,46 +101,67 @@ code, .font-mono {
     --destructive-foreground: 30 30% 96%;
     --border: 24 16% 22%;
     --input: 24 16% 22%;
-    --ring: 28 60% 62%;
+    --ring: 28 70% 60%;
+    --surface-2: 24 18% 14%;
+    --surface-3: 24 18% 18%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  h1, h2, h3, .font-display {
-    font-family: "Fraunces", ui-serif, Georgia, serif;
-    letter-spacing: -0.02em;
-  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
+  h1, h2, h3, .font-display { font-family: "Fraunces", ui-serif, Georgia, serif; letter-spacing: -0.02em; }
 }
 
 @layer components {
-  .cs-card {
-    @apply rounded-2xl border border-border bg-card;
-    box-shadow: var(--shadow-sm);
-  }
+  .cs-card { @apply rounded-2xl border border-border bg-card; box-shadow: var(--shadow-sm); }
   .warm-band {
     background-image:
-      radial-gradient(1200px 300px at 20% 0%, rgba(242,199,194,0.55), transparent 60%),
-      radial-gradient(900px 260px at 80% 10%, rgba(231,214,195,0.65), transparent 55%);
+      radial-gradient(1200px 320px at 15% -10%, hsl(8 78% 56% / 0.16), transparent 60%),
+      radial-gradient(1000px 300px at 85% 0%, hsl(42 85% 52% / 0.18), transparent 55%);
   }
+  .auth-band {
+    background-image:
+      radial-gradient(900px 500px at 20% 20%, hsl(22 62% 38% / 0.22), transparent 60%),
+      radial-gradient(700px 500px at 80% 80%, hsl(8 78% 56% / 0.20), transparent 60%);
+  }
+  .noise { background-image: radial-gradient(circle at 1px 1px, rgba(36,23,15,0.05) 1px, transparent 0); background-size: 14px 14px; }
 }
 
-/* Markdown prose styling */
+/* Semantic badges */
+.cs-badge { display:inline-flex; align-items:center; gap:.3rem; border-radius:9999px; padding:.2rem .6rem; font-size:.7rem; font-weight:700; line-height:1; border:1px solid transparent; white-space:nowrap; }
+.badge-blog { background:hsl(var(--accent-blog) / .12); color:hsl(var(--accent-blog)); border-color:hsl(var(--accent-blog) / .28); }
+.badge-newsletter { background:hsl(var(--accent-newsletter) / .12); color:hsl(var(--accent-newsletter)); border-color:hsl(var(--accent-newsletter) / .28); }
+.badge-draft { background:hsl(var(--accent-draft) / .10); color:hsl(var(--accent-draft)); border-color:hsl(var(--accent-draft) / .24); }
+.badge-published { background:hsl(var(--accent-published) / .12); color:hsl(var(--accent-published)); border-color:hsl(var(--accent-published) / .28); }
+.badge-queued { background:hsl(var(--accent-queued) / .12); color:hsl(var(--accent-queued)); border-color:hsl(var(--accent-queued) / .28); }
+.badge-generating { background:hsl(var(--accent-generating) / .16); color:hsl(38 70% 34%); border-color:hsl(var(--accent-generating) / .32); }
+.badge-complete { background:hsl(var(--accent-complete) / .12); color:hsl(var(--accent-complete)); border-color:hsl(var(--accent-complete) / .28); }
+.badge-failed { background:hsl(var(--accent-failed) / .12); color:hsl(var(--accent-failed)); border-color:hsl(var(--accent-failed) / .28); }
+.badge-openai { background:hsl(var(--accent-openai) / .12); color:hsl(var(--accent-openai)); border-color:hsl(var(--accent-openai) / .28); }
+.badge-anthropic { background:hsl(var(--accent-anthropic) / .12); color:hsl(var(--accent-anthropic)); border-color:hsl(var(--accent-anthropic) / .28); }
+.badge-gemini { background:hsl(var(--accent-gemini) / .12); color:hsl(var(--accent-gemini)); border-color:hsl(var(--accent-gemini) / .28); }
+.badge-image { background:hsl(var(--accent-media-image) / .12); color:hsl(var(--accent-media-image)); border-color:hsl(var(--accent-media-image) / .28); }
+.badge-gif { background:hsl(var(--accent-media-gif) / .12); color:hsl(var(--accent-media-gif)); border-color:hsl(var(--accent-media-gif) / .28); }
+.badge-video { background:hsl(var(--accent-media-video) / .12); color:hsl(var(--accent-media-video)); border-color:hsl(var(--accent-media-video) / .28); }
+.badge-export-html { background:hsl(var(--accent-export-html) / .12); color:hsl(var(--accent-export-html)); border-color:hsl(var(--accent-export-html) / .28); }
+.badge-export-markdown { background:hsl(var(--accent-export-markdown) / .12); color:hsl(var(--accent-export-markdown)); border-color:hsl(var(--accent-export-markdown) / .28); }
+.badge-export-wordpress { background:hsl(var(--accent-export-wordpress) / .12); color:hsl(var(--accent-export-wordpress)); border-color:hsl(var(--accent-export-wordpress) / .28); }
+.badge-export-csv { background:hsl(var(--accent-export-csv) / .12); color:hsl(var(--accent-export-csv)); border-color:hsl(var(--accent-export-csv) / .28); }
+.badge-export-pdf { background:hsl(var(--accent-export-pdf) / .12); color:hsl(var(--accent-export-pdf)); border-color:hsl(var(--accent-export-pdf) / .28); }
+.badge-export-txt { background:hsl(var(--accent-export-txt) / .12); color:hsl(var(--accent-export-txt)); border-color:hsl(var(--accent-export-txt) / .28); }
+
+/* Markdown prose */
 .prose-cs { color: hsl(var(--foreground)); line-height: 1.75; font-size: 1rem; }
-.prose-cs h1 { font-size: 1.9rem; margin: 1.2rem 0 0.6rem; color: hsl(22 55% 26%); }
-.prose-cs h2 { font-size: 1.4rem; margin: 1.4rem 0 0.5rem; color: hsl(22 55% 28%); }
+.prose-cs h1 { font-size: 1.9rem; margin: 1.2rem 0 0.6rem; color: hsl(22 62% 26%); }
+.prose-cs h2 { font-size: 1.4rem; margin: 1.4rem 0 0.5rem; color: hsl(22 62% 28%); }
 .prose-cs h3 { font-size: 1.15rem; margin: 1.1rem 0 0.4rem; }
 .prose-cs p { margin: 0.7rem 0; }
 .prose-cs ul, .prose-cs ol { margin: 0.6rem 0 0.6rem 1.4rem; }
 .prose-cs ul { list-style: disc; }
 .prose-cs ol { list-style: decimal; }
 .prose-cs li { margin: 0.25rem 0; }
-.prose-cs a { color: hsl(28 51% 43%); text-decoration: underline; }
+.prose-cs a { color: hsl(var(--accent-export-html)); text-decoration: underline; }
 .prose-cs img { max-width: 100%; border-radius: 0.9rem; margin: 1rem 0; }
 .prose-cs blockquote { border-left: 3px solid hsl(var(--border)); padding-left: 1rem; color: hsl(var(--muted-foreground)); margin: 0.8rem 0; }
 .prose-cs code { background: hsl(var(--muted)); padding: 0.1rem 0.35rem; border-radius: 0.35rem; font-size: 0.85em; }
@@ -120,6 +172,4 @@ code, .font-mono {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
 
-@layer base {
-  [data-debug-wrapper="true"] { display: contents !important; }
-}
+@layer base { [data-debug-wrapper="true"] { display: contents !important; } }

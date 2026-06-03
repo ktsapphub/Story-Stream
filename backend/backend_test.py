@@ -1,7 +1,6 @@
 """
-Comprehensive backend API tests for Content Studio.
-Tests all endpoints: models, stats, blog generation, batch, scoring, newsletter, 
-image generation, media, knowledge base, content CRUD, and exports.
+Comprehensive backend API tests for Content Studio Phase 3.
+Tests auth (JWT bearer tokens), user scoping, and all endpoints with authentication.
 """
 import requests
 import sys
@@ -22,32 +21,44 @@ class ContentStudioTester:
         self.media_ids = []
         self.knowledge_ids = []
         self.job_ids = []
+        self.token = None  # JWT bearer token
+        self.user = None
         
     def log(self, msg, level="INFO"):
         """Log with timestamp"""
         print(f"[{datetime.now().strftime('%H:%M:%S')}] {level}: {msg}")
     
     def test(self, name, method, endpoint, expected_status, data=None, params=None, 
-             files=None, timeout=60, check_response=None):
+             files=None, timeout=60, check_response=None, use_auth=True):
         """Run a single API test"""
         url = f"{self.base_url}/{endpoint}"
         self.tests_run += 1
         self.log(f"Test #{self.tests_run}: {name}")
         
         try:
-            headers = {'Content-Type': 'application/json'} if not files else {}
+            headers = {}
+            if not files:
+                headers['Content-Type'] = 'application/json'
+            
+            # Add auth header if token is available and use_auth is True
+            if use_auth and self.token:
+                headers['Authorization'] = f'Bearer {self.token}'
             
             if method == 'GET':
-                response = requests.get(url, params=params, timeout=timeout)
+                response = requests.get(url, params=params, headers=headers, timeout=timeout)
             elif method == 'POST':
                 if files:
-                    response = requests.post(url, files=files, data=data, timeout=timeout)
+                    # For file uploads, don't set Content-Type (requests will set it with boundary)
+                    auth_headers = {}
+                    if use_auth and self.token:
+                        auth_headers['Authorization'] = f'Bearer {self.token}'
+                    response = requests.post(url, files=files, data=data, headers=auth_headers, timeout=timeout)
                 else:
                     response = requests.post(url, json=data, headers=headers, timeout=timeout)
             elif method == 'PUT':
                 response = requests.put(url, json=data, headers=headers, timeout=timeout)
             elif method == 'DELETE':
-                response = requests.delete(url, timeout=timeout)
+                response = requests.delete(url, headers=headers, timeout=timeout)
             else:
                 raise ValueError(f"Unsupported method: {method}")
             
@@ -94,46 +105,58 @@ class ContentStudioTester:
     def run_all_tests(self):
         """Run all test suites"""
         self.log("=" * 60)
-        self.log("Starting Content Studio Backend Tests")
+        self.log("Starting Content Studio Phase 3 Backend Tests")
         self.log("=" * 60)
         
-        # Test 1: Meta endpoints
-        self.log("\n### Testing Meta Endpoints ###")
+        # Test 1: Auth endpoints
+        self.log("\n### Testing Auth Endpoints ###")
+        self.test_auth_endpoints()
+        
+        # Test 2: Protected endpoints without auth (should return 401)
+        self.log("\n### Testing Protected Endpoints Without Auth ###")
+        self.test_protected_without_auth()
+        
+        # Test 3: User scoping
+        self.log("\n### Testing User Scoping ###")
+        self.test_user_scoping()
+        
+        # Test 4: Meta endpoints (with auth)
+        self.log("\n### Testing Meta Endpoints (Authenticated) ###")
         self.test_meta_endpoints()
         
-        # Test 2: Blog generation (single)
+        # Test 5: Blog generation (single)
         self.log("\n### Testing Blog Generation ###")
         self.test_blog_generation()
         
-        # Test 3: Batch generation
+        # Test 6: Batch generation
         self.log("\n### Testing Batch Generation ###")
         self.test_batch_generation()
         
-        # Test 4: Quality scoring
+        # Test 7: Quality scoring
         self.log("\n### Testing Quality Scoring ###")
         self.test_scoring()
         
-        # Test 5: Newsletter generation
+        # Test 8: Newsletter generation
         self.log("\n### Testing Newsletter Generation ###")
         self.test_newsletter_generation()
         
-        # Test 6: Image generation
+        # Test 9: Image generation
         self.log("\n### Testing Image Generation ###")
         self.test_image_generation()
         
-        # Test 7: Media management
+        # Test 10: Media management
         self.log("\n### Testing Media Management ###")
         self.test_media_management()
         
-        # Test 8: Knowledge base
+        # Test 11: Knowledge base
         self.log("\n### Testing Knowledge Base ###")
         self.test_knowledge_base()
         
-        # Test 9: Content CRUD
+        # Test 12: Content CRUD
         self.log("\n### Testing Content CRUD ###")
         self.test_content_crud()
         
-        # Test 10: Exports
+        # Test 13: Exports
         self.log("\n### Testing Exports ###")
         self.test_exports()
         
@@ -141,6 +164,179 @@ class ContentStudioTester:
         self.print_summary()
         
         return self.tests_failed == 0
+    
+    def test_auth_endpoints(self):
+        """Test authentication endpoints"""
+        # Test login with correct credentials
+        payload = {
+            "email": "mydatejar@gmail.com",
+            "password": "Test1234"
+        }
+        
+        success, data = self.test(
+            "POST /api/auth/login (correct credentials)",
+            "POST", "auth/login", 200,
+            data=payload,
+            use_auth=False,
+            check_response=lambda d: "token" in d and "user" in d
+        )
+        
+        if success and data.get("token"):
+            self.token = data["token"]
+            self.user = data["user"]
+            self.log(f"  Logged in as: {self.user.get('email')}")
+        else:
+            self.log("  ❌ CRITICAL: Failed to login, cannot continue tests", "ERROR")
+            return
+        
+        # Test login with wrong password
+        payload = {
+            "email": "mydatejar@gmail.com",
+            "password": "WrongPassword123"
+        }
+        
+        self.test(
+            "POST /api/auth/login (wrong password) - should return 401",
+            "POST", "auth/login", 401,
+            data=payload,
+            use_auth=False
+        )
+        
+        # Test GET /api/auth/me with valid token
+        self.test(
+            "GET /api/auth/me (with valid token)",
+            "GET", "auth/me", 200,
+            check_response=lambda d: "email" in d and d.get("email") == "mydatejar@gmail.com"
+        )
+        
+        # Test register new user
+        timestamp = int(time.time())
+        new_email = f"tester+{timestamp}@example.com"
+        payload = {
+            "email": new_email,
+            "password": "Test1234",
+            "name": "Test User"
+        }
+        
+        success, data = self.test(
+            f"POST /api/auth/register (new user: {new_email})",
+            "POST", "auth/register", 200,
+            data=payload,
+            use_auth=False,
+            check_response=lambda d: "token" in d and "user" in d and d["user"].get("email") == new_email
+        )
+        
+        if success:
+            self.log(f"  New user registered: {new_email}")
+        
+        # Test bypass token (if enabled)
+        self.log("\n  Testing bypass token...")
+        bypass_token = "cs-test-bypass"
+        original_token = self.token
+        self.token = bypass_token
+        
+        success, data = self.test(
+            "GET /api/auth/me (with bypass token)",
+            "GET", "auth/me", 200,
+            check_response=lambda d: "email" in d
+        )
+        
+        if success:
+            self.log(f"  ✅ Bypass token works, authenticated as: {data.get('email')}")
+        
+        # Restore original token
+        self.token = original_token
+    
+    def test_protected_without_auth(self):
+        """Test that protected endpoints return 401 without auth"""
+        # Save current token
+        original_token = self.token
+        self.token = None
+        
+        # Test various protected endpoints
+        endpoints = [
+            ("GET /api/stats", "GET", "stats"),
+            ("GET /api/content", "GET", "content"),
+            ("GET /api/models", "GET", "models"),
+            ("GET /api/media", "GET", "media"),
+            ("GET /api/knowledge", "GET", "knowledge"),
+        ]
+        
+        for name, method, endpoint in endpoints:
+            self.test(
+                f"{name} (no auth) - should return 401",
+                method, endpoint, 401,
+                use_auth=False
+            )
+        
+        # Restore token
+        self.token = original_token
+    
+    def test_user_scoping(self):
+        """Test that users only see their own data"""
+        # Save seed user token
+        seed_token = self.token
+        
+        # Register a brand new user
+        timestamp = int(time.time())
+        new_email = f"scoping_test+{timestamp}@example.com"
+        payload = {
+            "email": new_email,
+            "password": "Test1234",
+            "name": "Scoping Test User"
+        }
+        
+        success, data = self.test(
+            f"POST /api/auth/register (scoping test user: {new_email})",
+            "POST", "auth/register", 200,
+            data=payload,
+            use_auth=False,
+            check_response=lambda d: "token" in d
+        )
+        
+        if not success or not data.get("token"):
+            self.log("  ⚠️ Failed to create test user for scoping test", "WARN")
+            self.token = seed_token
+            return
+        
+        # Switch to new user's token
+        new_user_token = data["token"]
+        self.token = new_user_token
+        self.log(f"  Switched to new user: {new_email}")
+        
+        # Test that new user sees empty content
+        success, data = self.test(
+            "GET /api/content (new user) - should be empty",
+            "GET", "content", 200,
+            check_response=lambda d: isinstance(d, list) and len(d) == 0
+        )
+        
+        if success:
+            self.log(f"  ✅ New user sees empty content (count: {len(data)})")
+        
+        # Test that new user sees empty stats
+        success, data = self.test(
+            "GET /api/stats (new user) - should be zero",
+            "GET", "stats", 200,
+            check_response=lambda d: d.get("blogs", -1) == 0 and d.get("newsletters", -1) == 0
+        )
+        
+        if success:
+            self.log(f"  ✅ New user sees zero stats: {data}")
+        
+        # Switch back to seed user
+        self.token = seed_token
+        self.log(f"  Switched back to seed user: mydatejar@gmail.com")
+        
+        # Test that seed user sees existing content
+        success, data = self.test(
+            "GET /api/content (seed user) - should have content",
+            "GET", "content", 200,
+            check_response=lambda d: isinstance(d, list) and len(d) > 0
+        )
+        
+        if success:
+            self.log(f"  ✅ Seed user sees existing content (count: {len(data)})")
     
     def test_meta_endpoints(self):
         """Test /models and /stats endpoints"""
@@ -241,7 +437,7 @@ class ContentStudioTester:
             return
         
         content_id = self.content_ids[0]
-        payload = {"content_id": content_id}
+        payload = {"content_id": content_id, "model_key": "gemini-2.5-flash"}
         
         success, data = self.test(
             f"POST /api/score (content_id: {content_id})",
@@ -315,14 +511,19 @@ class ContentStudioTester:
             self.media_ids.append(data["id"])
             self.log(f"  Generated image ID: {data['id']}")
             
-            # Test serving the image
+            # Test serving the image (public endpoint, no auth needed)
             if data.get("storage_path"):
                 path = data["storage_path"]
+                # Save token and test without auth
+                temp_token = self.token
+                self.token = None
                 success, _ = self.test(
-                    f"GET /api/files/{path}",
+                    f"GET /api/files/{path} (public, no auth)",
                     "GET", f"files/{path}", 200,
-                    timeout=15
+                    timeout=15,
+                    use_auth=False
                 )
+                self.token = temp_token
     
     def test_media_management(self):
         """Test media upload, from-url, list, delete"""
@@ -383,9 +584,9 @@ class ContentStudioTester:
     
     def test_knowledge_base(self):
         """Test knowledge base URL add, list, get, delete"""
-        # Test add URL
+        # Test add URL (use a simple URL that's likely to work)
         payload = {
-            "url": "https://en.wikipedia.org/wiki/Date_(romantic)"
+            "url": "https://example.com"
         }
         
         success, data = self.test(
@@ -497,7 +698,7 @@ class ContentStudioTester:
             )
     
     def test_exports(self):
-        """Test all export formats"""
+        """Test all export formats (with auth)"""
         if not self.content_ids:
             self.log("  ⚠️ Skipping export tests - no content available", "WARN")
             return

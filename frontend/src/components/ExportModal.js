@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Download, Copy, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { exportUrl, fetchExportText } from "@/lib/api";
+import { fetchExportText, downloadExport } from "@/lib/api";
+import { exportBadgeClass } from "@/lib/ui";
 
 const FORMATS = [
   { key: "html", label: "HTML", desc: "Standalone styled web page" },
@@ -21,17 +22,20 @@ const FORMATS = [
 export const ExportModal = ({ open, onOpenChange, content }) => {
   const [format, setFormat] = useState("html");
   const [busy, setBusy] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   if (!content) return null;
 
-  const download = () => {
-    const a = document.createElement("a");
-    a.href = exportUrl(content.id, format);
-    a.download = "";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    toast.success(`Exporting as ${format.toUpperCase()}`);
+  const filename = (content.slug || content.title || "content").replace(/[^a-z0-9-_]+/gi, "-").slice(0, 60);
+
+  const download = async () => {
+    setDownloading(true);
+    try {
+      await downloadExport(content.id, format, `${filename}.${format === "markdown" ? "md" : format === "wordpress" ? "html" : format}`);
+      toast.success(`Exported as ${format.toUpperCase()}`);
+    } catch {
+      toast.error("Export failed");
+    } finally { setDownloading(false); }
   };
 
   const copy = async () => {
@@ -59,12 +63,12 @@ export const ExportModal = ({ open, onOpenChange, content }) => {
             <Label
               key={f.key}
               htmlFor={`fmt-${f.key}`}
-              className={`flex items-start gap-2 rounded-xl border p-3 cursor-pointer transition-colors ${format === f.key ? "border-primary bg-secondary/60" : "border-border hover:bg-secondary/40"}`}
+              className={`flex items-start gap-2 rounded-xl border p-3 cursor-pointer transition-[background-color,border-color] ${format === f.key ? "border-primary bg-[hsl(var(--surface-2))]" : "border-border hover:bg-[hsl(var(--surface-2))]"}`}
               data-testid={`export-format-${f.key}`}
             >
               <RadioGroupItem value={f.key} id={`fmt-${f.key}`} className="mt-0.5" />
               <div>
-                <div className="text-sm font-medium">{f.label}</div>
+                <span className={`cs-badge ${exportBadgeClass(f.key)} mb-1`}>{f.label}</span>
                 <div className="text-xs text-muted-foreground">{f.desc}</div>
               </div>
             </Label>
@@ -72,8 +76,8 @@ export const ExportModal = ({ open, onOpenChange, content }) => {
         </RadioGroup>
 
         <div className="flex gap-2 pt-2">
-          <Button onClick={download} className="rounded-xl gap-2 flex-1" data-testid="export-confirm-button">
-            <Download className="h-4 w-4" /> Download
+          <Button onClick={download} disabled={downloading} className="rounded-xl gap-2 flex-1" data-testid="export-confirm-button">
+            {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Download
           </Button>
           <Button onClick={copy} variant="secondary" className="rounded-xl gap-2 flex-1" disabled={busy} data-testid="export-copy-button">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />} Copy text

@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +21,7 @@ import {
   getModels, generateBlog, generateBatch, getJob, getContent, saveContent,
   scoreContent, newsletterFromBlog, generateImage, absUrl,
 } from "@/lib/api";
+import { statusBadgeClass, providerBadgeClass, providerOf, providerLabel, itemStatusClass } from "@/lib/ui";
 
 export default function BlogStudio() {
   const { id } = useParams();
@@ -185,7 +185,7 @@ export default function BlogStudio() {
             <Card className="cs-card p-5" data-testid="batch-queue-list">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold flex items-center gap-2"><Layers className="h-4 w-4" /> Batch generation</h3>
-                <Badge variant="secondary">{job.completed}/{job.total}</Badge>
+                <span className="cs-badge badge-queued">{job.completed}/{job.total}</span>
               </div>
               <Progress value={(job.completed / job.total) * 100} className="mb-4" />
               <div className="space-y-2 max-h-[360px] overflow-auto">
@@ -198,7 +198,7 @@ export default function BlogStudio() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium truncate">{it.title || it.topic}</div>
-                      <div className="text-xs text-muted-foreground capitalize">{it.status}</div>
+                      <span className={`cs-badge ${itemStatusClass(it.status)} mt-1`}>{it.status}</span>
                     </div>
                     {it.status === "complete" && (
                       <Button size="sm" variant="secondary" className="rounded-lg" onClick={() => navigate(`/blog/${it.content_id}`)} data-testid={`batch-open-${it.index}`}>Open</Button>
@@ -233,8 +233,8 @@ export default function BlogStudio() {
         <div className="flex-1 min-w-0">
           <h1 className="font-display text-2xl font-semibold truncate">{content.title || "Untitled"}</h1>
           <div className="flex items-center gap-2 mt-1">
-            <Badge variant="secondary" className="rounded-full capitalize">{content.status}</Badge>
-            {content.model_used && <Badge variant="outline" className="rounded-full">{content.model_used}</Badge>}
+            <span className={`cs-badge ${statusBadgeClass(content.status)}`} data-testid="status-badge">{content.status}</span>
+            {content.model_used && <span className={`cs-badge ${providerBadgeClass(content.model_used)}`} data-testid="model-provider-chip">{providerLabel[providerOf(content.model_used)]} · {content.model_used}</span>}
           </div>
         </div>
         <div className="flex items-center gap-2">

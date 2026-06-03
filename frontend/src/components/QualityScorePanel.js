@@ -1,19 +1,21 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Gauge, Loader2, RefreshCw } from "lucide-react";
+import { scoreTier, scoreTierLabel } from "@/lib/ui";
 
-const tier = (s) => (s >= 90 ? "sage" : s >= 70 ? "caramel" : "rose");
-const tierColor = { sage: "hsl(168 35% 34%)", caramel: "hsl(28 51% 43%)", rose: "hsl(0 72% 52%)" };
-const tierLabel = { sage: "Excellent", caramel: "Good", rose: "Needs work" };
+const tierColorVar = {
+  excellent: "hsl(var(--accent-score-excellent))",
+  good: "hsl(var(--accent-score-good))",
+  needs_work: "hsl(var(--accent-score-needs-work))",
+};
 
 export const QualityScorePanel = ({ score, loading, onScore }) => {
   const overall = score?.overall_score ?? null;
-  const t = overall != null ? tier(overall) : "caramel";
+  const t = overall != null ? scoreTier(overall) : "good";
   const breakdown = score?.breakdown || {};
 
   return (
@@ -37,12 +39,12 @@ export const QualityScorePanel = ({ score, loading, onScore }) => {
           <div className="flex items-center gap-4">
             <div
               className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4"
-              style={{ borderColor: tierColor[t], color: tierColor[t] }}
+              style={{ borderColor: tierColorVar[t], color: tierColorVar[t] }}
             >
               <span className="font-display text-2xl font-bold" data-testid="quality-score-value">{overall}</span>
             </div>
             <div>
-              <Badge style={{ background: tierColor[t], color: "white" }}>{tierLabel[t]}</Badge>
+              <span className="cs-badge" style={{ background: tierColorVar[t], color: "white", borderColor: "transparent" }} data-testid="quality-score-tier-badge">{scoreTierLabel[t]}</span>
               <p className="mt-1 text-xs text-muted-foreground">Overall content quality out of 100</p>
             </div>
           </div>
@@ -54,8 +56,8 @@ export const QualityScorePanel = ({ score, loading, onScore }) => {
                   <span className="capitalize text-muted-foreground">{k}</span>
                   <span className="font-medium">{v}</span>
                 </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width: `${v}%`, background: tierColor[tier(v)] }} />
+                <div className="h-2 rounded-full bg-[hsl(var(--surface-2))] overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${v}%`, background: tierColorVar[scoreTier(v)] }} />
                 </div>
               </div>
             ))}
