@@ -20,7 +20,7 @@
     "status": "completed"
   },
   {
-    "content": "Test new features end-to-end",
-    "status": "in_progress"
+    "content": "Test new features end-to-end (98.4%, frontend 100%) + harden LLM JSON parsing",
+    "status": "completed"
   }
 ]

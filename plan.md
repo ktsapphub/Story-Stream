@@ -147,12 +147,14 @@
 ## STATUS LOG
 - Phase 1 POC: COMPLETE (7/7).
 - Phase 2 Backend + Frontend: COMPLETE, tested 94%.
-- Phase 3 (Auth + Design Refresh): COMPLETE, tested 98.5% (backend 48/49, frontend 100%).
-  - Auth: email/password JWT bearer tokens, bcrypt, seed admin (mydatejar@gmail.com / Test1234), test bypass token `cs-test-bypass` (ENABLE_TEST_BYPASS=true).
-  - All content/media/knowledge/jobs scoped by `owner`; pre-auth data migrated to seed user.
-  - Frontend: AuthContext, axios bearer interceptor, Login/Signup pages, protected routes, user menu + logout.
-  - Design refresh: higher-contrast tokens + semantic color system (color-coded nav, content-type, status, provider, score-tier, media-type, export-format badges).
-- NEXT (optional / on user request): live WordPress publishing, Google login, analytics. Reminder: set ENABLE_TEST_BYPASS=false before production.
+- Phase 3 (Auth + Design Refresh): COMPLETE, tested 98.5%.
+- Phase 3.1 (Rebrand): buttons black, heart logo removed, all brown replaced with #835ef5 (purple).
+- Phase 4 (New features): COMPLETE, tested 98.4% (frontend 100%).
+  - Knowledge-base TOPIC SELECTOR (type-or-select) on Blog + Newsletter generators; selected topics steer generation (GET /api/knowledge/topics; topics/focus_topics fields on generate endpoints).
+  - Stock media search (Pexels + Pixabay + Unsplash) in the Insert-media dialog AND header picker: GET /api/stock/providers, GET /api/stock/search. Keys read from env (PEXELS_API_KEY/PIXABAY_API_KEY/UNSPLASH_ACCESS_KEY) \u2014 currently EMPTY, so UI shows a 'needs API key' state and search returns 400 until keys are added.
+  - Stock picks embed the external provider URL (with attribution); 'From URL' tab also supports Cloudinary image/video links.
+  - Hardened LLM JSON parsing with repair + 1 retry to fix intermittent malformed-JSON generations.
+- NEXT (optional / on user request): add stock API keys to enable search; live WordPress publishing; Google login. Reminder: set ENABLE_TEST_BYPASS=false before production.
 
 ---
 

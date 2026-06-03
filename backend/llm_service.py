@@ -40,7 +40,7 @@ def _resolve(model_key: str):
 
 
 def extract_json(text: str):
-    """Robustly extract a JSON object from an LLM response."""
+    """Robustly extract a JSON object from an LLM response, with light repair."""
     if not text:
         raise ValueError("Empty LLM response")
     fenced = re.search(r"```(?:json)?\s*(\{.*\})\s*```", text, re.DOTALL)
@@ -52,7 +52,12 @@ def extract_json(text: str):
         if start == -1 or end == -1:
             raise ValueError(f"No JSON found in response: {text[:160]}")
         candidate = text[start:end + 1]
-    return json.loads(candidate)
+    try:
+        return json.loads(candidate)
+    except json.JSONDecodeError:
+        # Light repair: remove trailing commas before } or ]
+        repaired = re.sub(r",(\s*[}\]])", r"\1", candidate)
+        return json.loads(repaired)
 
 
 def _new_chat(model_key: str, system_message: str):
@@ -62,6 +67,24 @@ def _new_chat(model_key: str, system_message: str):
         session_id=f"cs-{int(time.time()*1000)}-{os.urandom(3).hex()}",
         system_message=system_message,
     ).with_model(provider, model)
+
+
+async def _chat_json(model_key: str, system_message: str, prompt: str, retries: int = 2) -> dict:
+    """Send a prompt and parse a JSON object, retrying on malformed JSON."""
+    last_err = None
+    for attempt in range(retries + 1):
+        chat = _new_chat(model_key, system_message)
+        p = prompt
+        if attempt > 0:
+            p = prompt + ("\n\nIMPORTANT: Respond with STRICT, valid JSON only \u2014 "
+                          "no trailing commas, no comments, no text before or after the JSON object.")
+        resp = await chat.send_message(UserMessage(text=p))
+        try:
+            return extract_json(resp)
+        except (json.JSONDecodeError, ValueError) as e:
+            last_err = e
+            continue
+    raise last_err if last_err else ValueError("Failed to parse JSON")
 
 
 BLOG_SYSTEM = (
@@ -105,12 +128,10 @@ async def generate_blog(topic: str, model_key: str = DEFAULT_MODEL, tone: str = 
         )
     if focus_topics:
         reference += "\nWeave in and emphasize these focus topics/themes: " + ", ".join(focus_topics) + ".\n"
-    chat = _new_chat(model_key, BLOG_SYSTEM)
     prompt = BLOG_TEMPLATE.format(
         topic=topic, tone=tone, length=LENGTHS.get(length, LENGTHS["medium"]), reference=reference
     )
-    resp = await chat.send_message(UserMessage(text=prompt))
-    data = extract_json(resp)
+    data = await _chat_json(model_key, BLOG_SYSTEM, prompt)
     required = ["title", "slug", "meta_description", "tags", "excerpt", "body_markdown", "image_prompts"]
     for k in required:
         data.setdefault(k, "" if k not in ("tags", "image_prompts") else [])
@@ -164,9 +185,8 @@ Return ONLY a JSON object with EXACTLY these keys:
 
 
 async def score_content(title: str, body: str, model_key: str = DEFAULT_MODEL) -> dict:
-    chat = _new_chat(model_key, SCORE_SYSTEM)
-    resp = await chat.send_message(UserMessage(text=SCORE_TEMPLATE.format(title=title, body=body[:5000])))
-    data = extract_json(resp)
+    prompt = SCORE_TEMPLATE.format(title=title, body=body[:5000])
+    data = await _chat_json(model_key, SCORE_SYSTEM, prompt)
     data.setdefault("overall_score", 0)
     data.setdefault("breakdown", {})
     data.setdefault("suggestions", [])
@@ -209,12 +229,10 @@ Return ONLY a JSON object with EXACTLY these keys:
 
 
 async def transform_to_newsletter(blog: dict, model_key: str = DEFAULT_MODEL) -> dict:
-    chat = _new_chat(model_key, NL_SYSTEM)
     prompt = NL_FROM_BLOG.format(
         title=blog.get("title", ""), excerpt=blog.get("excerpt", ""),
         body=(blog.get("body_markdown", "") or "")[:5000])
-    resp = await chat.send_message(UserMessage(text=prompt))
-    data = extract_json(resp)
+    data = await _chat_json(model_key, NL_SYSTEM, prompt)
     data.setdefault("sections", [])
     return data
 
@@ -227,10 +245,8 @@ async def generate_newsletter(topic: str, model_key: str = DEFAULT_MODEL,
                      + reference_context[:6000] + "\n\"\"\"\n")
     if focus_topics:
         reference += "\nWeave in and emphasize these focus topics/themes: " + ", ".join(focus_topics) + ".\n"
-    chat = _new_chat(model_key, NL_SYSTEM)
     prompt = NL_FROM_PROMPT.format(topic=topic, tone=tone, reference=reference)
-    resp = await chat.send_message(UserMessage(text=prompt))
-    data = extract_json(resp)
+    data = await _chat_json(model_key, NL_SYSTEM, prompt)
     data.setdefault("sections", [])
     return data
 
