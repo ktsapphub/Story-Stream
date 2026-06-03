@@ -95,7 +95,7 @@ LENGTHS = {
 
 
 async def generate_blog(topic: str, model_key: str = DEFAULT_MODEL, tone: str = "warm and engaging",
-                        length: str = "medium", reference_context: str = "") -> dict:
+                        length: str = "medium", reference_context: str = "", focus_topics=None) -> dict:
     reference = ""
     if reference_context:
         reference = (
@@ -103,6 +103,8 @@ async def generate_blog(topic: str, model_key: str = DEFAULT_MODEL, tone: str = 
             "(create original look-alike content, do NOT copy verbatim):\n\"\"\"\n"
             + reference_context[:6000] + "\n\"\"\"\n"
         )
+    if focus_topics:
+        reference += "\nWeave in and emphasize these focus topics/themes: " + ", ".join(focus_topics) + ".\n"
     chat = _new_chat(model_key, BLOG_SYSTEM)
     prompt = BLOG_TEMPLATE.format(
         topic=topic, tone=tone, length=LENGTHS.get(length, LENGTHS["medium"]), reference=reference
@@ -117,14 +119,14 @@ async def generate_blog(topic: str, model_key: str = DEFAULT_MODEL, tone: str = 
 
 async def generate_blog_batch(topics, model_key=DEFAULT_MODEL, tone="warm and engaging",
                               length="medium", reference_context="", concurrency=5,
-                              on_item=None):
+                              on_item=None, focus_topics=None):
     """Generate multiple blogs concurrently. on_item(index, result_or_exc) callback."""
     sem = asyncio.Semaphore(concurrency)
 
     async def one(idx, topic):
         async with sem:
             try:
-                res = await generate_blog(topic, model_key, tone, length, reference_context)
+                res = await generate_blog(topic, model_key, tone, length, reference_context, focus_topics)
                 if on_item:
                     await on_item(idx, res, None)
                 return res
@@ -218,11 +220,13 @@ async def transform_to_newsletter(blog: dict, model_key: str = DEFAULT_MODEL) ->
 
 
 async def generate_newsletter(topic: str, model_key: str = DEFAULT_MODEL,
-                              tone: str = "warm and engaging", reference_context: str = "") -> dict:
+                              tone: str = "warm and engaging", reference_context: str = "", focus_topics=None) -> dict:
     reference = ""
     if reference_context:
         reference = ("\nUse this reference material for inspiration (original look-alike, no copying):\n\"\"\"\n"
                      + reference_context[:6000] + "\n\"\"\"\n")
+    if focus_topics:
+        reference += "\nWeave in and emphasize these focus topics/themes: " + ", ".join(focus_topics) + ".\n"
     chat = _new_chat(model_key, NL_SYSTEM)
     prompt = NL_FROM_PROMPT.format(topic=topic, tone=tone, reference=reference)
     resp = await chat.send_message(UserMessage(text=prompt))

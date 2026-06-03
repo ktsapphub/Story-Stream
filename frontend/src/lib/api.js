@@ -68,6 +68,10 @@ export const uploadKnowledge = (file) => {
   return http.post("/knowledge/upload", fd, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data);
 };
 export const listKnowledge = () => http.get("/knowledge").then((r) => r.data);
+export const getKnowledgeTopics = () => http.get("/knowledge/topics").then((r) => r.data);
+export const getStockProviders = () => http.get("/stock/providers").then((r) => r.data);
+export const stockSearch = (query, provider = "all", kind = "photo", page = 1) =>
+  http.get("/stock/search", { params: { query, provider, kind, page } }).then((r) => r.data);
 export const getKnowledge = (id) => http.get(`/knowledge/${id}`).then((r) => r.data);
 export const deleteKnowledge = (id) => http.delete(`/knowledge/${id}`).then((r) => r.data);
 

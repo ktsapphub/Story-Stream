@@ -12,6 +12,7 @@ import {
 import { Sparkles, BookOpen, Loader2 } from "lucide-react";
 import { listKnowledge } from "@/lib/api";
 import { providerOf } from "@/lib/ui";
+import { TopicSelector } from "@/components/TopicSelector";
 
 const PROVIDER_DOT = { openai: "--accent-openai", anthropic: "--accent-anthropic", gemini: "--accent-gemini" };
 
@@ -27,6 +28,7 @@ export const PromptComposer = ({
   const [mode, setMode] = useState("single");
   const [sources, setSources] = useState([]);
   const [selected, setSelected] = useState([]);
+  const [focusTopics, setFocusTopics] = useState([]);
 
   useEffect(() => { if (defaultModel && !model) setModel(defaultModel); }, [defaultModel]);
   useEffect(() => { listKnowledge().then(setSources).catch(() => {}); }, []);
@@ -35,9 +37,9 @@ export const PromptComposer = ({
 
   const submit = () => {
     if (mode === "batch" && kind === "blog") {
-      onGenerate({ mode: "batch", topics, model_key: model, tone, length, reference_source_ids: selected });
+      onGenerate({ mode: "batch", topics, model_key: model, tone, length, reference_source_ids: selected, focusTopics });
     } else {
-      onGenerate({ mode: "single", topic: prompt.trim(), model_key: model, tone, length, reference_source_ids: selected });
+      onGenerate({ mode: "single", topic: prompt.trim(), model_key: model, tone, length, reference_source_ids: selected, focusTopics });
     }
   };
 
@@ -122,6 +124,8 @@ export const PromptComposer = ({
           </div>
         ) : <div />}
       </div>
+
+      <TopicSelector value={focusTopics} onChange={setFocusTopics} />
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <Popover>

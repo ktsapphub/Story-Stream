@@ -48,6 +48,7 @@ export default function NewsletterStudio() {
       const c = await generateNewsletter({
         topic: payload.topic, model_key: payload.model_key,
         tone: payload.tone, reference_source_ids: payload.reference_source_ids,
+        topics: payload.focusTopics || [],
       });
       toast.success("Newsletter generated!");
       navigate(`/newsletter/${c.id}`);

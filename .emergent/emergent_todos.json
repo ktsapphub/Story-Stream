@@ -1,22 +1,26 @@
 [
   {
-    "content": "Phase 3a: Get auth playbook + refreshed design guidelines",
+    "content": "Get integration playbook for Pexels + Pixabay + Unsplash",
     "status": "completed"
   },
   {
-    "content": "Phase 3b: Backend auth (signup/login/me, JWT, bcrypt, seed user, test bypass) + user scoping",
+    "content": "Backend: KB topics endpoint + steer generation with selected topics",
     "status": "completed"
   },
   {
-    "content": "Phase 3c: Frontend auth (login/signup, AuthContext, interceptor, protected routes)",
+    "content": "Backend: stock search endpoint (providers status + search) with env-key config",
     "status": "completed"
   },
   {
-    "content": "Phase 3d: Apply modern design refresh (tokens, color-coded nav/badges, contrast)",
+    "content": "Frontend: type-or-select KB topic chooser in PromptComposer (blog + newsletter)",
     "status": "completed"
   },
   {
-    "content": "Phase 3e: End-to-end testing (98.5% pass, no real bugs)",
+    "content": "Frontend: Stock tab + source selector in MediaInsertDialog (insert + header picker)",
     "status": "completed"
+  },
+  {
+    "content": "Test new features end-to-end",
+    "status": "in_progress"
   }
 ]

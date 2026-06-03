@@ -21,6 +21,7 @@ import llm_service as llm
 import knowledge as kb
 import exporters
 import auth
+import stock
 
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
@@ -95,6 +96,7 @@ class GenerateBlogRequest(BaseModel):
     tone: str = "warm and engaging"
     length: str = "medium"
     reference_source_ids: List[str] = []
+    topics: List[str] = []
     save: bool = True
 
 
@@ -104,6 +106,7 @@ class BatchRequest(BaseModel):
     tone: str = "warm and engaging"
     length: str = "medium"
     reference_source_ids: List[str] = []
+    focus_topics: List[str] = []
 
 
 class ScoreRequest(BaseModel):
@@ -124,6 +127,7 @@ class NewsletterFromPromptRequest(BaseModel):
     model_key: str = llm.DEFAULT_MODEL
     tone: str = "warm and engaging"
     reference_source_ids: List[str] = []
+    topics: List[str] = []
     save: bool = True
 
 
@@ -138,6 +142,8 @@ class MediaFromUrlRequest(BaseModel):
     url: str
     title: Optional[str] = None
     media_type: Optional[str] = None
+    source: Optional[str] = None
+    source_page_url: Optional[str] = None
 
 
 class KnowledgeUrlRequest(BaseModel):
@@ -277,7 +283,7 @@ async def get_models(user: dict = Depends(get_current_user)):
 async def generate_blog(req: GenerateBlogRequest, user: dict = Depends(get_current_user)):
     try:
         ref = await build_reference_context(req.reference_source_ids, user["id"])
-        data = await llm.generate_blog(req.topic, req.model_key, req.tone, req.length, ref)
+        data = await llm.generate_blog(req.topic, req.model_key, req.tone, req.length, ref, req.topics)
     except Exception as e:
         logger.exception("blog generation failed")
         raise HTTPException(status_code=500, detail=f"Generation failed: {e}")
@@ -321,7 +327,7 @@ async def generate_blog_batch(req: BatchRequest, user: dict = Depends(get_curren
 
         await db.jobs.update_one({"id": job_id}, {"$set": {f"items.{i}.status": "generating" for i in range(len(topics))}})
         try:
-            await llm.generate_blog_batch(topics, req.model_key, req.tone, req.length, ref, concurrency=5, on_item=on_item)
+            await llm.generate_blog_batch(topics, req.model_key, req.tone, req.length, ref, concurrency=5, on_item=on_item, focus_topics=req.focus_topics)
         finally:
             await db.jobs.update_one({"id": job_id}, {"$set": {"status": "done"}})
 
@@ -385,7 +391,7 @@ async def newsletter_from_blog(req: NewsletterFromBlogRequest, user: dict = Depe
 async def newsletter_from_prompt(req: NewsletterFromPromptRequest, user: dict = Depends(get_current_user)):
     try:
         ref = await build_reference_context(req.reference_source_ids, user["id"])
-        nl = await llm.generate_newsletter(req.topic, req.model_key, req.tone, ref)
+        nl = await llm.generate_newsletter(req.topic, req.model_key, req.tone, ref, req.topics)
     except Exception as e:
         logger.exception("newsletter generation failed")
         raise HTTPException(status_code=500, detail=f"Generation failed: {e}")
@@ -471,9 +477,10 @@ async def media_from_url(req: MediaFromUrlRequest, user: dict = Depends(get_curr
         "content_type": None,
         "size": 0,
         "media_type": mtype,
-        "source": "url",
+        "source": req.source or "url",
         "prompt": req.title or "",
         "external_url": url,
+        "source_page_url": req.source_page_url,
         "is_deleted": False,
         "created_at": now_iso(),
     }
@@ -566,6 +573,18 @@ async def list_knowledge(user: dict = Depends(get_current_user)):
     return await db.knowledge.find({"owner": user["id"], "is_deleted": {"$ne": True}}, {"_id": 0, "content": 0}).sort("created_at", -1).to_list(500)
 
 
+@api_router.get("/knowledge/topics")
+async def knowledge_topics(user: dict = Depends(get_current_user)):
+    docs = await db.knowledge.find({"owner": user["id"], "is_deleted": {"$ne": True}}, {"_id": 0, "topics": 1}).to_list(500)
+    seen = {}
+    for d in docs:
+        for t in (d.get("topics") or []):
+            key = str(t).strip()
+            if key and key.lower() not in seen:
+                seen[key.lower()] = key
+    return {"topics": sorted(seen.values(), key=str.lower)}
+
+
 @api_router.get("/knowledge/{source_id}")
 async def get_knowledge(source_id: str, user: dict = Depends(get_current_user)):
     doc = await db.knowledge.find_one({"id": source_id, "owner": user["id"]}, {"_id": 0})
@@ -654,6 +673,33 @@ async def export(content_id: str, format: str = Query("html"), user: dict = Depe
     safe = "".join(c if c.isalnum() or c in "-_" else "-" for c in (slug or "content"))[:60] or "content"
     return Response(content=data, media_type=content_type,
                     headers={"Content-Disposition": f'attachment; filename="{safe}.{ext}"'})
+
+
+# ----------------------- Stock media -----------------------
+@api_router.get("/stock/providers")
+async def stock_providers(user: dict = Depends(get_current_user)):
+    return {"providers": stock.provider_status()}
+
+
+@api_router.get("/stock/search")
+async def stock_search(
+    query: str = Query(..., min_length=1),
+    provider: str = Query("all"),
+    kind: str = Query("photo"),
+    page: int = Query(1, ge=1),
+    user: dict = Depends(get_current_user),
+):
+    status = stock.provider_status()
+    if provider != "all" and not status.get(provider):
+        raise HTTPException(status_code=400, detail=f"{provider.capitalize()} is not configured. Add its API key to enable search.")
+    if provider == "all" and not any(status.values()):
+        raise HTTPException(status_code=400, detail="No stock providers configured yet. Add a Pexels, Pixabay, or Unsplash API key to enable search.")
+    try:
+        results = await asyncio.to_thread(stock.search, provider, query, page, 24, kind)
+    except Exception as e:
+        logger.exception("stock search failed")
+        raise HTTPException(status_code=502, detail=f"Stock search failed: {e}")
+    return {"provider": provider, "kind": kind, "results": results}
 
 
 # ----------------------- Stats -----------------------

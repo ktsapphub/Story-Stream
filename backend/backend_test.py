@@ -160,6 +160,18 @@ class ContentStudioTester:
         self.log("\n### Testing Exports ###")
         self.test_exports()
         
+        # Test 14: Stock providers (NEW FEATURE)
+        self.log("\n### Testing Stock Providers (NEW FEATURE) ###")
+        self.test_stock_providers()
+        
+        # Test 15: Generation with topics (NEW FEATURE)
+        self.log("\n### Testing Generation with Topics (NEW FEATURE) ###")
+        self.test_generation_with_topics()
+        
+        # Test 16: Media from URL with source fields (NEW FEATURE)
+        self.log("\n### Testing Media from URL with Source Fields (NEW FEATURE) ###")
+        self.test_media_from_url_with_source()
+        
         # Print summary
         self.print_summary()
         
@@ -617,6 +629,16 @@ class ContentStudioTester:
             check_response=lambda d: isinstance(d, list)
         )
         
+        # NEW FEATURE: Test GET /api/knowledge/topics
+        success, data = self.test(
+            "GET /api/knowledge/topics (NEW FEATURE)",
+            "GET", "knowledge/topics", 200,
+            check_response=lambda d: "topics" in d and isinstance(d.get("topics"), list)
+        )
+        
+        if success:
+            self.log(f"  ✅ Knowledge topics endpoint working, returned {len(data.get('topics', []))} topics")
+        
         # Test delete knowledge
         if self.knowledge_ids:
             kid = self.knowledge_ids[0]
@@ -723,6 +745,163 @@ class ContentStudioTester:
             
             if success:
                 self.log(f"  ✅ Export format '{fmt}' working")
+    
+    def test_stock_providers(self):
+        """Test stock provider endpoints (NEW FEATURE)"""
+        # Test GET /api/stock/providers
+        success, data = self.test(
+            "GET /api/stock/providers",
+            "GET", "stock/providers", 200,
+            check_response=lambda d: "providers" in d and isinstance(d.get("providers"), dict)
+        )
+        
+        if success:
+            providers = data.get("providers", {})
+            self.log(f"  Stock providers status: {providers}")
+            # All should be False since no keys are configured
+            if all(not v for v in providers.values()):
+                self.log(f"  ✅ All providers correctly show as not configured")
+            else:
+                self.log(f"  ⚠️ Some providers show as configured (unexpected)", "WARN")
+        
+        # Test GET /api/stock/search with provider=all (should return 400)
+        success, data = self.test(
+            "GET /api/stock/search?query=sunset&provider=all (should return 400)",
+            "GET", "stock/search", 400,
+            params={"query": "sunset", "provider": "all"}
+        )
+        
+        if success:
+            self.log(f"  ✅ Stock search correctly returns 400 when no providers configured")
+        
+        # Test GET /api/stock/search with provider=pexels (should return 400)
+        success, data = self.test(
+            "GET /api/stock/search?query=sunset&provider=pexels (should return 400)",
+            "GET", "stock/search", 400,
+            params={"query": "sunset", "provider": "pexels"}
+        )
+        
+        if success:
+            self.log(f"  ✅ Stock search correctly returns 400 for unconfigured Pexels")
+    
+    def test_generation_with_topics(self):
+        """Test blog/newsletter generation with topics field (NEW FEATURE)"""
+        # Test blog generation with topics
+        payload = {
+            "topic": "Spring picnic date ideas",
+            "model_key": "gemini-2.5-flash",
+            "tone": "warm and engaging",
+            "length": "short",
+            "topics": ["picnic", "spring"],
+            "save": True
+        }
+        
+        success, data = self.test(
+            "POST /api/generate/blog with topics=['picnic','spring']",
+            "POST", "generate/blog", 200,
+            data=payload,
+            timeout=60,
+            check_response=lambda d: "id" in d and "title" in d
+        )
+        
+        if success and data.get("id"):
+            self.content_ids.append(data["id"])
+            self.log(f"  ✅ Blog generated with topics, ID: {data['id']}")
+        
+        # Test batch generation with focus_topics
+        payload = {
+            "topics": [
+                "Romantic date night ideas",
+                "Fun couple activities"
+            ],
+            "model_key": "gemini-2.5-flash",
+            "tone": "warm and engaging",
+            "length": "short",
+            "focus_topics": ["date night"]
+        }
+        
+        success, data = self.test(
+            "POST /api/generate/blog/batch with focus_topics=['date night']",
+            "POST", "generate/blog/batch", 200,
+            data=payload,
+            check_response=lambda d: "id" in d and "status" in d
+        )
+        
+        if success and data.get("id"):
+            job_id = data["id"]
+            self.log(f"  ✅ Batch job with focus_topics created: {job_id}")
+            
+            # Poll for completion (shorter timeout for testing)
+            self.log("  Polling batch job with focus_topics...")
+            for i in range(20):
+                time.sleep(3)
+                success, job_data = self.test(
+                    f"GET /api/jobs/{job_id} (poll {i+1})",
+                    "GET", f"jobs/{job_id}", 200
+                )
+                
+                if success and job_data.get("status") == "done":
+                    self.log(f"  ✅ Batch job with focus_topics completed")
+                    break
+        
+        # Test newsletter generation with topics
+        payload = {
+            "topic": "Romantic date ideas newsletter",
+            "model_key": "gemini-2.5-flash",
+            "tone": "warm and engaging",
+            "topics": ["romance"],
+            "save": True
+        }
+        
+        success, data = self.test(
+            "POST /api/generate/newsletter with topics=['romance']",
+            "POST", "generate/newsletter", 200,
+            data=payload,
+            timeout=60,
+            check_response=lambda d: "id" in d and "newsletter" in d
+        )
+        
+        if success and data.get("id"):
+            self.content_ids.append(data["id"])
+            self.log(f"  ✅ Newsletter generated with topics, ID: {data['id']}")
+    
+    def test_media_from_url_with_source(self):
+        """Test POST /api/media/from-url with source fields (NEW FEATURE)"""
+        payload = {
+            "url": "https://picsum.photos/800/600",
+            "media_type": "image",
+            "title": "Test image from Pexels",
+            "source": "pexels",
+            "source_page_url": "https://www.pexels.com/photo/test-12345/"
+        }
+        
+        success, data = self.test(
+            "POST /api/media/from-url with source + source_page_url",
+            "POST", "media/from-url", 200,
+            data=payload,
+            check_response=lambda d: "id" in d
+        )
+        
+        if success and data.get("id"):
+            media_id = data["id"]
+            self.media_ids.append(media_id)
+            self.log(f"  ✅ Media from URL with source fields created, ID: {media_id}")
+            
+            # Verify the source fields were stored by fetching media list
+            success, media_list = self.test(
+                "GET /api/media (verify source fields)",
+                "GET", "media", 200,
+                check_response=lambda d: isinstance(d, list)
+            )
+            
+            if success:
+                # Find our media item
+                media_item = next((m for m in media_list if m.get("id") == media_id), None)
+                if media_item:
+                    if media_item.get("source") == "pexels" and media_item.get("source_page_url"):
+                        self.log(f"  ✅ Source fields correctly stored: source={media_item.get('source')}")
+                    else:
+                        self.log(f"  ⚠️ Source fields not stored correctly", "WARN")
     
     def print_summary(self):
         """Print test summary"""

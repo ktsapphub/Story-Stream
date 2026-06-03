@@ -77,6 +77,7 @@ export default function BlogStudio() {
           topics: payload.topics, model_key: payload.model_key,
           tone: payload.tone, length: payload.length,
           reference_source_ids: payload.reference_source_ids,
+          focus_topics: payload.focusTopics || [],
         });
         setJob(j);
         toast.success(`Generating ${j.total} posts...`);
@@ -85,6 +86,7 @@ export default function BlogStudio() {
           topic: payload.topic, model_key: payload.model_key,
           tone: payload.tone, length: payload.length,
           reference_source_ids: payload.reference_source_ids,
+          topics: payload.focusTopics || [],
         });
         toast.success("Blog generated!");
         navigate(`/blog/${c.id}`);
