@@ -4,7 +4,7 @@
 - Maintain a reliable **core AI content pipeline** end-to-end: multi-provider text gen → batch generation → AI images (Nano Banana) → quality scoring → blog→newsletter transform.
 - Deliver a cohesive V1+ experience (React + FastAPI + MongoDB + shadcn/ui) with:
   - Studios (Blog + Newsletter), media insertion (upload / AI generate / URL / stock search), exports (CSV/HTML/PDF/TXT/MD), Knowledge Base sources.
-- Add a managed **Knowledge Base Topics repository** that supports:
+- Provide a managed **Knowledge Base Topics repository** that supports:
   - CRUD topic management with descriptions
   - AI-assisted topic derivation (bulk) and per-topic description generation
   - Integration into prompt steering via the existing `TopicSelector`
@@ -156,42 +156,16 @@
 5. ~~Rebrand UI: black primary buttons, remove heart logo, replace brown with `#835ef5` purple accents.~~ DONE
 6. ~~Add Topic Selector (type-or-select) and topic steering in generate endpoints.~~ DONE
 7. ~~Add stock media search architecture (Pexels/Pixabay/Unsplash) with mocked “needs API key” state.~~ DONE (blocked on user keys)
+8. ~~Knowledge Base Topics Management (backend + frontend + testing).~~ DONE
+   - Backend: `kb_topics` collection, CRUD endpoints, AI derive + describe endpoints, LLM helpers
+   - Frontend: `TopicsManager` UI, integrated into Knowledge Base as `Sources | Topics` tabs
+   - `TopicSelector`: enriched dropdown with managed topic descriptions
+   - Testing: frontend testing agent **100% pass** (`/app/test_reports/iteration_4.json`), zero bugs
 
-### Current Focus (P0) — Knowledge Base Topics UI (Frontend-only)
-**Context update:** Backend is already implemented and verified working via curl:
-- MongoDB `kb_topics` repository
-- Endpoints: `GET/POST /api/topics`, `PUT/DELETE /api/topics/{id}`
-- AI helpers: `POST /api/topics/derive` (bulk from source_id or pasted text), `POST /api/topics/{id}/describe` (generate/refresh description)
-- LLM functions: `derive_topics`, `describe_topic` implemented in `/app/backend/llm_service.py`
-- API client functions already exist in `/app/frontend/src/lib/api.js`
-
-**Remaining work = Frontend only**
-1. Build `TopicsManager` component (Knowledge Base → Topics)
-   - List topics: `name`, `description`, `source` badge (user vs derived)
-   - Add topic flow:
-     - Input: `name`
-     - Toggle per topic: **User-written** vs **AI-derived** description
-     - If AI-derived: allow choosing **Knowledge Base source** OR **pasted text** (both supported)
-   - Edit topic flow:
-     - Edit name/description
-     - Toggle **User-written** vs **AI-derived** per topic
-     - “Regenerate description” action (calls `/topics/{id}/describe` with optional source)
-   - Delete topic action
-   - Bulk derive flow:
-     - Dialog: choose source OR paste text; choose `count` (1–15)
-     - Calls `/topics/derive` and shows added/skipped results
-2. Integrate into `KnowledgeBase.js` via top-level tabs:
-   - `Sources | Topics`
-3. Enrich `TopicSelector`:
-   - Keep merging **managed topics** + existing **source-derived suggestions** (already merged in `/api/knowledge/topics`)
-   - Add descriptions to the dropdown UI by loading managed topics list (`GET /api/topics`) and showing description for matching suggestion names
-4. Testing
-   - Frontend testing agent run:
-     - Add/edit/delete topics
-     - Derive topics from source and from pasted text
-     - Regenerate a topic description
-     - Confirm TopicSelector displays descriptions and still allows custom add
-   - Backend smoke check as part of UI tests (ensure endpoints are used correctly)
+### Current Focus (P0)
+- **Unblock Stock Providers by adding API keys** (requires user input)
+  - Add keys to `.env`: `PEXELS_API_KEY`, `PIXABAY_API_KEY`, `UNSPLASH_ACCESS_KEY`
+  - Then run both backend + frontend tests to verify live search + insert-to-library flow
 
 ### Blocked / Waiting
 - Stock image providers: requires user to supply API keys in `.env` (`PEXELS_API_KEY`, `PIXABAY_API_KEY`, `UNSPLASH_ACCESS_KEY`).
@@ -209,9 +183,7 @@
 - Phase 4 (New features): PARTIAL
   - Topic Selector + topic steering: COMPLETE
   - Stock media search: COMPLETE but BLOCKED (API keys missing)
-  - **Knowledge Base Topics Management:**
-    - Backend + DB + LLM: COMPLETE and verified via curl
-    - Frontend UI: NOT STARTED (this is the current work)
+  - **Knowledge Base Topics Management:** COMPLETE (backend + frontend) and tested (iteration_4.json)
 
 ---
 
@@ -223,6 +195,7 @@
   - Users can AI-derive topics (name + description) from **either KB source OR pasted text**
   - Users can toggle per topic between **User-written** and **AI-derived** description, including regenerate
   - TopicSelector shows merged suggestions and surfaces descriptions for managed topics
+  - Feature verified by frontend testing agent (100% pass)
 - **Reliability:** Batch generation shows per-item results and handles partial failures with retry.
-- **Brand cohesion:** UI stays consistent with current My Date Jar styling rules (black primary buttons, purple accents).
-- **Testing:** New Topics UI flows pass frontend tests and do not regress blog/newsletter generation flows.
+- **Brand cohesion:** UI stays consistent with current My Date Jar styling rules (black buttons, purple accents).
+- **Testing:** Knowledge Base Topics UI flows pass and do not regress blog/newsletter generation flows.
