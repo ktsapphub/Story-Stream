@@ -15,47 +15,50 @@ code, .font-mono { font-family: "IBM Plex Mono", Menlo, Monaco, Consolas, "Couri
 
 @layer base {
   :root {
-    --background: 34 60% 98%;
-    --foreground: 24 28% 10%;
+    --background: 252 40% 99%;
+    --foreground: 250 22% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 24 28% 10%;
+    --card-foreground: 250 22% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 24 28% 10%;
-    --primary: 22 62% 30%;
-    --primary-foreground: 34 60% 98%;
-    --secondary: 30 35% 92%;
-    --secondary-foreground: 24 25% 14%;
-    --muted: 30 30% 94%;
-    --muted-foreground: 24 12% 38%;
-    --accent: 18 70% 92%;
-    --accent-foreground: 22 62% 24%;
+    --popover-foreground: 250 22% 11%;
+    --primary: 255 88% 66%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 252 35% 95%;
+    --secondary-foreground: 250 25% 16%;
+    --muted: 252 30% 96%;
+    --muted-foreground: 250 8% 42%;
+    --accent: 255 88% 94%;
+    --accent-foreground: 255 70% 42%;
     --destructive: 0 74% 52%;
     --destructive-foreground: 0 0% 100%;
-    --border: 24 18% 84%;
-    --input: 24 18% 84%;
-    --ring: 22 62% 30%;
-    --chart-1: 22 62% 38%;
+    --border: 252 20% 90%;
+    --input: 252 20% 90%;
+    --ring: 255 88% 66%;
+    --chart-1: 255 88% 64%;
     --chart-2: 174 52% 32%;
     --chart-3: 8 78% 56%;
     --chart-4: 42 85% 52%;
     --chart-5: 206 62% 44%;
     --radius: 0.95rem;
-    --shadow-sm: 0 1px 2px rgba(36, 23, 15, 0.06);
-    --shadow-md: 0 14px 40px rgba(36, 23, 15, 0.10);
-    --shadow-focus: 0 0 0 4px rgba(122, 63, 29, 0.18);
+    --shadow-sm: 0 1px 2px rgba(28, 20, 48, 0.06);
+    --shadow-md: 0 14px 40px rgba(28, 20, 48, 0.12);
+    --shadow-focus: 0 0 0 4px rgba(131, 94, 245, 0.22);
 
-    --surface-2: 30 35% 96%;
-    --surface-3: 30 35% 92%;
+    --button: 250 24% 9%;
+    --button-foreground: 0 0% 100%;
+
+    --surface-2: 252 35% 96%;
+    --surface-3: 252 32% 93%;
 
     /* semantic accents */
     --accent-dashboard: 206 62% 44%;
-    --accent-blog: 22 62% 38%;
+    --accent-blog: 255 88% 64%;
     --accent-newsletter: 174 52% 32%;
-    --accent-content-library: 262 38% 52%;
+    --accent-content-library: 286 52% 50%;
     --accent-media-library: 8 78% 56%;
     --accent-knowledge-base: 42 85% 46%;
 
-    --accent-draft: 24 12% 38%;
+    --accent-draft: 250 8% 44%;
     --accent-published: 152 52% 34%;
     --accent-queued: 206 62% 44%;
     --accent-generating: 42 85% 46%;
@@ -63,7 +66,7 @@ code, .font-mono { font-family: "IBM Plex Mono", Menlo, Monaco, Consolas, "Couri
     --accent-failed: 0 74% 52%;
 
     --accent-openai: 174 52% 32%;
-    --accent-anthropic: 22 62% 38%;
+    --accent-anthropic: 255 88% 64%;
     --accent-gemini: 206 62% 44%;
 
     --accent-score-excellent: 152 52% 34%;
@@ -71,39 +74,41 @@ code, .font-mono { font-family: "IBM Plex Mono", Menlo, Monaco, Consolas, "Couri
     --accent-score-needs-work: 8 78% 56%;
 
     --accent-export-html: 206 62% 44%;
-    --accent-export-markdown: 262 38% 52%;
+    --accent-export-markdown: 286 52% 50%;
     --accent-export-wordpress: 174 52% 32%;
     --accent-export-csv: 152 52% 34%;
     --accent-export-pdf: 0 74% 52%;
-    --accent-export-txt: 24 12% 38%;
+    --accent-export-txt: 250 8% 44%;
 
-    --accent-media-image: 22 62% 38%;
-    --accent-media-gif: 262 38% 52%;
+    --accent-media-image: 255 88% 64%;
+    --accent-media-gif: 286 52% 50%;
     --accent-media-video: 206 62% 44%;
   }
 
   .dark {
-    --background: 24 26% 8%;
-    --foreground: 30 30% 94%;
-    --card: 24 24% 11%;
-    --card-foreground: 30 30% 94%;
-    --popover: 24 24% 11%;
-    --popover-foreground: 30 30% 94%;
-    --primary: 28 70% 60%;
-    --primary-foreground: 24 26% 10%;
-    --secondary: 24 18% 18%;
-    --secondary-foreground: 30 30% 94%;
-    --muted: 24 16% 18%;
-    --muted-foreground: 30 14% 64%;
-    --accent: 24 20% 20%;
-    --accent-foreground: 30 30% 94%;
+    --background: 250 24% 8%;
+    --foreground: 252 30% 94%;
+    --card: 250 22% 11%;
+    --card-foreground: 252 30% 94%;
+    --popover: 250 22% 11%;
+    --popover-foreground: 252 30% 94%;
+    --primary: 255 88% 70%;
+    --primary-foreground: 250 24% 10%;
+    --secondary: 250 18% 18%;
+    --secondary-foreground: 252 30% 94%;
+    --muted: 250 16% 18%;
+    --muted-foreground: 252 14% 64%;
+    --accent: 250 20% 20%;
+    --accent-foreground: 252 30% 94%;
     --destructive: 0 62% 50%;
-    --destructive-foreground: 30 30% 96%;
-    --border: 24 16% 22%;
-    --input: 24 16% 22%;
-    --ring: 28 70% 60%;
-    --surface-2: 24 18% 14%;
-    --surface-3: 24 18% 18%;
+    --destructive-foreground: 0 0% 96%;
+    --border: 250 16% 22%;
+    --input: 250 16% 22%;
+    --ring: 255 88% 70%;
+    --button: 0 0% 100%;
+    --button-foreground: 250 24% 10%;
+    --surface-2: 250 18% 14%;
+    --surface-3: 250 18% 18%;
   }
 }
 
@@ -117,15 +122,15 @@ code, .font-mono { font-family: "IBM Plex Mono", Menlo, Monaco, Consolas, "Couri
   .cs-card { @apply rounded-2xl border border-border bg-card; box-shadow: var(--shadow-sm); }
   .warm-band {
     background-image:
-      radial-gradient(1200px 320px at 15% -10%, hsl(8 78% 56% / 0.16), transparent 60%),
-      radial-gradient(1000px 300px at 85% 0%, hsl(42 85% 52% / 0.18), transparent 55%);
+      radial-gradient(1200px 320px at 15% -10%, hsl(255 88% 66% / 0.16), transparent 60%),
+      radial-gradient(1000px 300px at 85% 0%, hsl(286 52% 60% / 0.16), transparent 55%);
   }
   .auth-band {
     background-image:
-      radial-gradient(900px 500px at 20% 20%, hsl(22 62% 38% / 0.22), transparent 60%),
-      radial-gradient(700px 500px at 80% 80%, hsl(8 78% 56% / 0.20), transparent 60%);
+      radial-gradient(900px 500px at 20% 20%, hsl(255 88% 66% / 0.24), transparent 60%),
+      radial-gradient(700px 500px at 80% 80%, hsl(286 52% 56% / 0.20), transparent 60%);
   }
-  .noise { background-image: radial-gradient(circle at 1px 1px, rgba(36,23,15,0.05) 1px, transparent 0); background-size: 14px 14px; }
+  .noise { background-image: radial-gradient(circle at 1px 1px, rgba(28,20,48,0.05) 1px, transparent 0); background-size: 14px 14px; }
 }
 
 /* Semantic badges */
@@ -153,8 +158,8 @@ code, .font-mono { font-family: "IBM Plex Mono", Menlo, Monaco, Consolas, "Couri
 
 /* Markdown prose */
 .prose-cs { color: hsl(var(--foreground)); line-height: 1.75; font-size: 1rem; }
-.prose-cs h1 { font-size: 1.9rem; margin: 1.2rem 0 0.6rem; color: hsl(22 62% 26%); }
-.prose-cs h2 { font-size: 1.4rem; margin: 1.4rem 0 0.5rem; color: hsl(22 62% 28%); }
+.prose-cs h1 { font-size: 1.9rem; margin: 1.2rem 0 0.6rem; color: hsl(255 60% 46%); }
+.prose-cs h2 { font-size: 1.4rem; margin: 1.4rem 0 0.5rem; color: hsl(255 55% 48%); }
 .prose-cs h3 { font-size: 1.15rem; margin: 1.1rem 0 0.4rem; }
 .prose-cs p { margin: 0.7rem 0; }
 .prose-cs ul, .prose-cs ol { margin: 0.6rem 0 0.6rem 1.4rem; }

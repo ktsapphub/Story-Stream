@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, PenLine, Mail, Library, Image as ImageIcon,
-  BookOpen, Menu, Sparkles, Heart, LogOut,
+  BookOpen, Menu, Sparkles, LogOut,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -58,9 +58,6 @@ const NavItems = ({ onClick }) => (
 
 const Brand = () => (
   <div className="flex items-center gap-2.5 px-5 py-5">
-    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-      <Heart className="h-5 w-5" strokeWidth={2} fill="currentColor" />
-    </div>
     <div className="leading-tight">
       <div className="font-display text-lg font-semibold text-foreground">Content Studio</div>
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">My Date Jar</div>

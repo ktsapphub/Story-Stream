@@ -67,11 +67,11 @@ def export_html(content: dict, standalone: bool = True):
 <meta name="description" content="{meta}"/>
 <title>{title}</title>
 <style>
-  body {{ font-family: Georgia, 'Times New Roman', serif; max-width: 720px; margin: 40px auto; padding: 0 20px; color: #241A12; line-height: 1.7; }}
-  h1,h2,h3 {{ font-family: Georgia, serif; color: #452E16; }}
-  a {{ color: #A66E36; }}
+  body {{ font-family: Georgia, 'Times New Roman', serif; max-width: 720px; margin: 40px auto; padding: 0 20px; color: #1c1430; line-height: 1.7; }}
+  h1,h2,h3 {{ font-family: Georgia, serif; color: #5b3fd6; }}
+  a {{ color: #835ef5; }}
   img {{ max-width: 100%; border-radius: 12px; }}
-  blockquote {{ border-left: 3px solid #E7D6C3; margin-left:0; padding-left:16px; color:#6b5a48; }}
+  blockquote {{ border-left: 3px solid #e4ddf7; margin-left:0; padding-left:16px; color:#5a5470; }}
 </style>
 </head>
 <body>

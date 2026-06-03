@@ -49,12 +49,12 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-        <StatCard icon={FileText} label="Blog Posts" value={stats.blogs} accent="#A66E36" />
-        <StatCard icon={Mail} label="Newsletters" value={stats.newsletters} accent="#3F6F66" />
-        <StatCard icon={Sparkles} label="Published" value={stats.published} accent="#C0563E" />
-        <StatCard icon={ImageIcon} label="Media" value={stats.media} accent="#B58A3C" />
+        <StatCard icon={FileText} label="Blog Posts" value={stats.blogs} accent="#835EF5" />
+        <StatCard icon={Mail} label="Newsletters" value={stats.newsletters} accent="#2F8F82" />
+        <StatCard icon={Sparkles} label="Published" value={stats.published} accent="#2E9E6A" />
+        <StatCard icon={ImageIcon} label="Media" value={stats.media} accent="#E0583E" />
         <StatCard icon={BookOpen} label="Sources" value={stats.sources} accent="#4E7CA6" />
-        <StatCard icon={Gauge} label="Avg Score" value={stats.avg_score} accent="#3F6F66" />
+        <StatCard icon={Gauge} label="Avg Score" value={stats.avg_score} accent="#E0A21B" />
       </div>
 
       {/* Recent */}

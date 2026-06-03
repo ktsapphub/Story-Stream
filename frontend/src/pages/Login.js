@@ -4,19 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Heart, PenLine, Mail, Sparkles, Loader2 } from "lucide-react";
+import { PenLine, Mail, Sparkles, Loader2 } from "lucide-react";
 import { useAuth, formatApiErrorDetail } from "@/context/AuthContext";
-
 const BrandPanel = () => (
   <div className="relative hidden lg:flex flex-col justify-between auth-band noise p-10 w-[46%]">
-    <div className="flex items-center gap-2.5">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-        <Heart className="h-5 w-5" fill="currentColor" />
-      </div>
-      <div className="leading-tight">
-        <div className="font-display text-lg font-semibold">Content Studio</div>
-        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">My Date Jar</div>
-      </div>
+    <div className="leading-tight">
+      <div className="font-display text-lg font-semibold">Content Studio</div>
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">My Date Jar</div>
     </div>
     <div className="max-w-sm">
       <h1 className="font-display text-4xl font-semibold leading-tight">Craft content your readers will fall for.</h1>
@@ -57,7 +51,6 @@ export default function Login() {
       <div className="flex flex-1 items-center justify-center p-6">
         <Card className="cs-card w-full max-w-md p-7 sm:p-8">
           <div className="lg:hidden flex items-center gap-2 mb-6">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Heart className="h-5 w-5" fill="currentColor" /></div>
             <span className="font-display text-lg font-semibold">Content Studio</span>
           </div>
           <h2 className="font-display text-2xl font-semibold">Welcome back</h2>
