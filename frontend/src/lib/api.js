@@ -69,6 +69,12 @@ export const uploadKnowledge = (file) => {
 };
 export const listKnowledge = () => http.get("/knowledge").then((r) => r.data);
 export const getKnowledgeTopics = () => http.get("/knowledge/topics").then((r) => r.data);
+export const listTopics = () => http.get("/topics").then((r) => r.data);
+export const createTopic = (name, description) => http.post("/topics", { name, description }).then((r) => r.data);
+export const updateTopic = (id, payload) => http.put(`/topics/${id}`, payload).then((r) => r.data);
+export const deleteTopic = (id) => http.delete(`/topics/${id}`).then((r) => r.data);
+export const deriveTopics = (payload) => http.post("/topics/derive", payload).then((r) => r.data);
+export const describeTopic = (id, source_id) => http.post(`/topics/${id}/describe`, { source_id }).then((r) => r.data);
 export const getStockProviders = () => http.get("/stock/providers").then((r) => r.data);
 export const stockSearch = (query, provider = "all", kind = "photo", page = 1) =>
   http.get("/stock/search", { params: { query, provider, kind, page } }).then((r) => r.data);

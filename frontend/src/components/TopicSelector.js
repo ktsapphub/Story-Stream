@@ -1,20 +1,31 @@
 import React, { useEffect, useRef, useState } from "react";
 import { X, Tag, Plus } from "lucide-react";
-import { getKnowledgeTopics } from "@/lib/api";
+import { getKnowledgeTopics, listTopics } from "@/lib/api";
 
 /**
  * Type-or-select topic chooser. Suggestions come from the user's knowledge base
- * topics; users can also type a custom topic and press Enter to add it.
+ * topics (managed + source-derived); users can also type a custom topic and press
+ * Enter to add it. Managed topics surface their descriptions in the dropdown.
  * `value` is string[], `onChange(string[])`.
  */
 export const TopicSelector = ({ value = [], onChange, label = "Knowledge base topics" }) => {
   const [all, setAll] = useState([]);
+  const [descs, setDescs] = useState({});
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const boxRef = useRef(null);
 
   useEffect(() => {
     getKnowledgeTopics().then((d) => setAll(d.topics || [])).catch(() => {});
+    listTopics()
+      .then((list) => {
+        const map = {};
+        (list || []).forEach((t) => {
+          if (t.name && t.description) map[t.name.toLowerCase()] = t.description;
+        });
+        setDescs(map);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -79,17 +90,24 @@ export const TopicSelector = ({ value = [], onChange, label = "Knowledge base to
               <Plus className="h-4 w-4 text-primary" /> Add &ldquo;{query.trim()}&rdquo;
             </button>
           )}
-          {suggestions.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => add(t)}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm hover:bg-[hsl(var(--surface-2))] text-left"
-              data-testid={`topic-suggestion-${t}`}
-            >
-              <Tag className="h-3.5 w-3.5 text-muted-foreground" /> {t}
-            </button>
-          ))}
+          {suggestions.map((t) => {
+            const desc = descs[t.toLowerCase()];
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => add(t)}
+                className="flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-sm hover:bg-[hsl(var(--surface-2))] text-left"
+                data-testid={`topic-suggestion-${t}`}
+              >
+                <Tag className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                <span className="min-w-0">
+                  <span className="block font-medium leading-snug">{t}</span>
+                  {desc && <span className="block text-xs text-muted-foreground line-clamp-2">{desc}</span>}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

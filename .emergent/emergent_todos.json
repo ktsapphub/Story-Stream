@@ -1,26 +1,22 @@
 [
   {
-    "content": "Get integration playbook for Pexels + Pixabay + Unsplash",
+    "content": "Build TopicsManager component (list, add, edit, delete, derive, per-topic Written/AI toggle)",
     "status": "completed"
   },
   {
-    "content": "Backend: KB topics endpoint + steer generation with selected topics",
+    "content": "Integrate Topics into KnowledgeBase.js via Sources | Topics tabs",
     "status": "completed"
   },
   {
-    "content": "Backend: stock search endpoint (providers status + search) with env-key config",
+    "content": "Enrich TopicSelector dropdown to show topic descriptions",
     "status": "completed"
   },
   {
-    "content": "Frontend: type-or-select KB topic chooser in PromptComposer (blog + newsletter)",
+    "content": "Lint + screenshot verify UI",
     "status": "completed"
   },
   {
-    "content": "Frontend: Stock tab + source selector in MediaInsertDialog (insert + header picker)",
-    "status": "completed"
-  },
-  {
-    "content": "Test new features end-to-end (98.4%, frontend 100%) + harden LLM JSON parsing",
-    "status": "completed"
+    "content": "Test Topics CRUD + derive flows with testing agent (frontend)",
+    "status": "in_progress"
   }
 ]

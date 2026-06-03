@@ -8,10 +8,11 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import {
-  Link2, Upload, Trash2, Loader2, BookOpen, FileText, Globe, Eye,
+  Link2, Upload, Trash2, Loader2, BookOpen, FileText, Globe, Eye, Library, Tags,
 } from "lucide-react";
 import { toast } from "sonner";
 import { listKnowledge, addKnowledgeUrl, uploadKnowledge, deleteKnowledge, getKnowledge } from "@/lib/api";
+import { TopicsManager } from "@/components/TopicsManager";
 
 export default function KnowledgeBase() {
   const [items, setItems] = useState([]);
@@ -51,7 +52,14 @@ export default function KnowledgeBase() {
         <p className="text-muted-foreground mt-1">Add successful articles and reference docs. Use them to generate look-alike, on-brand content.</p>
       </div>
 
-      <Card className="cs-card p-4 sm:p-5">
+      <Tabs defaultValue="sources" data-testid="knowledge-base-main-tabs">
+        <TabsList className="rounded-xl">
+          <TabsTrigger value="sources" className="rounded-lg gap-1.5" data-testid="kb-main-tab-sources"><Library className="h-4 w-4" /> Sources</TabsTrigger>
+          <TabsTrigger value="topics" className="rounded-lg gap-1.5" data-testid="kb-main-tab-topics"><Tags className="h-4 w-4" /> Topics</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="sources" className="pt-4 space-y-5">
+          <Card className="cs-card p-4 sm:p-5">
         <Tabs defaultValue="url" data-testid="knowledge-base-tabs">
           <TabsList className="rounded-xl">
             <TabsTrigger value="url" className="rounded-lg" data-testid="kb-tab-url">Add URL</TabsTrigger>
@@ -110,6 +118,12 @@ export default function KnowledgeBase() {
           ))}
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="topics" className="pt-4">
+          <TopicsManager />
+        </TabsContent>
+      </Tabs>
 
       <Sheet open={!!detail} onOpenChange={(v) => !v && setDetail(null)}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">

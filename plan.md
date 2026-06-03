@@ -1,9 +1,18 @@
-# Content Studio — Development Plan
+# Content Studio — Development Plan (Updated)
 
 ## 1. Objectives
-- Prove the **core AI content pipeline** works end-to-end in isolation: multi-provider text gen → batch 5–10 → Nano Banana images → quality scoring → blog→newsletter transform.
-- Build a V1 full-stack app (React + FastAPI + MongoDB + shadcn/ui) around the proven core with: editors, media insertion (upload/URL/embed/AI image), knowledge base (URLs + uploads), and exports (HTML/MD/WP-ready/CSV/PDF/TXT).
-- Ensure UX + styling feels cohesive with **My Date Jar** (warm, inviting, premium, modern).
+- Maintain a reliable **core AI content pipeline** end-to-end: multi-provider text gen → batch generation → AI images (Nano Banana) → quality scoring → blog→newsletter transform.
+- Deliver a cohesive V1+ experience (React + FastAPI + MongoDB + shadcn/ui) with:
+  - Studios (Blog + Newsletter), media insertion (upload / AI generate / URL / stock search), exports (CSV/HTML/PDF/TXT/MD), Knowledge Base sources.
+- Add a managed **Knowledge Base Topics repository** that supports:
+  - CRUD topic management with descriptions
+  - AI-assisted topic derivation (bulk) and per-topic description generation
+  - Integration into prompt steering via the existing `TopicSelector`
+- Ensure UI stays consistent with current **My Date Jar** styling constraints:
+  - Black primary buttons
+  - Purple `#835ef5` accents
+  - No old heart logo; no brown/gold tones
+- Keep the app English-only for generated/described topic content.
 
 ---
 
@@ -64,7 +73,7 @@
   - PDF export (server-side render from HTML)
 
 2) Frontend (React + shadcn/ui)
-- Layout + theme aligned to My Date Jar tone (design_agent to finalize palette/typography).
+- Layout + theme aligned to My Date Jar tone.
 - Pages:
   - Dashboard: recent drafts, “New Blog”, “New Newsletter”, “Batch Generate”.
   - Blog Studio: prompt + model picker + batch mode; rich editor; image manager; embeds (YouTube/Giphy); quality panel; save/export.
@@ -138,29 +147,82 @@
 ---
 
 ## 3. Next Actions
+
+### Completed (Confirmed)
 1. ~~Run Phase 1 web research for emergentintegrations + Nano Banana patterns.~~ DONE
-2. ~~Implement `test_core.py` and iterate until all acceptance checks pass.~~ DONE (7/7 passed)
-3. ~~After POC success, implement Phase 2 V1 backend+frontend in one cohesive build.~~ DONE
-4. Execute V1 end-to-end tests and fix until stable. (IN PROGRESS)
-5. Ask for approval before adding auth (Phase 3).
+2. ~~Implement `test_core.py` and iterate until all acceptance checks pass.~~ DONE
+3. ~~Implement Phase 2 V1 backend+frontend in one cohesive build.~~ DONE
+4. ~~Implement Phase 3 Auth (JWT) + user scoping.~~ DONE
+5. ~~Rebrand UI: black primary buttons, remove heart logo, replace brown with `#835ef5` purple accents.~~ DONE
+6. ~~Add Topic Selector (type-or-select) and topic steering in generate endpoints.~~ DONE
+7. ~~Add stock media search architecture (Pexels/Pixabay/Unsplash) with mocked “needs API key” state.~~ DONE (blocked on user keys)
+
+### Current Focus (P0) — Knowledge Base Topics UI (Frontend-only)
+**Context update:** Backend is already implemented and verified working via curl:
+- MongoDB `kb_topics` repository
+- Endpoints: `GET/POST /api/topics`, `PUT/DELETE /api/topics/{id}`
+- AI helpers: `POST /api/topics/derive` (bulk from source_id or pasted text), `POST /api/topics/{id}/describe` (generate/refresh description)
+- LLM functions: `derive_topics`, `describe_topic` implemented in `/app/backend/llm_service.py`
+- API client functions already exist in `/app/frontend/src/lib/api.js`
+
+**Remaining work = Frontend only**
+1. Build `TopicsManager` component (Knowledge Base → Topics)
+   - List topics: `name`, `description`, `source` badge (user vs derived)
+   - Add topic flow:
+     - Input: `name`
+     - Toggle per topic: **User-written** vs **AI-derived** description
+     - If AI-derived: allow choosing **Knowledge Base source** OR **pasted text** (both supported)
+   - Edit topic flow:
+     - Edit name/description
+     - Toggle **User-written** vs **AI-derived** per topic
+     - “Regenerate description” action (calls `/topics/{id}/describe` with optional source)
+   - Delete topic action
+   - Bulk derive flow:
+     - Dialog: choose source OR paste text; choose `count` (1–15)
+     - Calls `/topics/derive` and shows added/skipped results
+2. Integrate into `KnowledgeBase.js` via top-level tabs:
+   - `Sources | Topics`
+3. Enrich `TopicSelector`:
+   - Keep merging **managed topics** + existing **source-derived suggestions** (already merged in `/api/knowledge/topics`)
+   - Add descriptions to the dropdown UI by loading managed topics list (`GET /api/topics`) and showing description for matching suggestion names
+4. Testing
+   - Frontend testing agent run:
+     - Add/edit/delete topics
+     - Derive topics from source and from pasted text
+     - Regenerate a topic description
+     - Confirm TopicSelector displays descriptions and still allows custom add
+   - Backend smoke check as part of UI tests (ensure endpoints are used correctly)
+
+### Blocked / Waiting
+- Stock image providers: requires user to supply API keys in `.env` (`PEXELS_API_KEY`, `PIXABAY_API_KEY`, `UNSPLASH_ACCESS_KEY`).
+
+### Operational reminder
+- `ENABLE_TEST_BYPASS` is currently `true` in backend `.env`. Keep for testing; must be set to `false` before production.
+
+---
 
 ## STATUS LOG
-- Phase 1 POC: COMPLETE (7/7).
-- Phase 2 Backend + Frontend: COMPLETE, tested 94%.
-- Phase 3 (Auth + Design Refresh): COMPLETE, tested 98.5%.
-- Phase 3.1 (Rebrand): buttons black, heart logo removed, all brown replaced with #835ef5 (purple).
-- Phase 4 (New features): COMPLETE, tested 98.4% (frontend 100%).
-  - Knowledge-base TOPIC SELECTOR (type-or-select) on Blog + Newsletter generators; selected topics steer generation (GET /api/knowledge/topics; topics/focus_topics fields on generate endpoints).
-  - Stock media search (Pexels + Pixabay + Unsplash) in the Insert-media dialog AND header picker: GET /api/stock/providers, GET /api/stock/search. Keys read from env (PEXELS_API_KEY/PIXABAY_API_KEY/UNSPLASH_ACCESS_KEY) \u2014 currently EMPTY, so UI shows a 'needs API key' state and search returns 400 until keys are added.
-  - Stock picks embed the external provider URL (with attribution); 'From URL' tab also supports Cloudinary image/video links.
-  - Hardened LLM JSON parsing with repair + 1 retry to fix intermittent malformed-JSON generations.
-- NEXT (optional / on user request): add stock API keys to enable search; live WordPress publishing; Google login. Reminder: set ENABLE_TEST_BYPASS=false before production.
+- Phase 1 POC: COMPLETE.
+- Phase 2 Backend + Frontend: COMPLETE.
+- Phase 3 (Auth + Design Refresh): COMPLETE.
+- Phase 3.1 (Rebrand): COMPLETE (black buttons, heart removed, purple accents).
+- Phase 4 (New features): PARTIAL
+  - Topic Selector + topic steering: COMPLETE
+  - Stock media search: COMPLETE but BLOCKED (API keys missing)
+  - **Knowledge Base Topics Management:**
+    - Backend + DB + LLM: COMPLETE and verified via curl
+    - Frontend UI: NOT STARTED (this is the current work)
 
 ---
 
 ## 4. Success Criteria
 - **POC:** All 3 LLM providers return schema-valid JSON; 5-item batch completes; Nano Banana generates images; scoring + transform return valid JSON.
 - **V1:** User can generate/edit/score/transform content, insert media (upload + URL embeds + AI images), use knowledge sources, and export to HTML/MD/WP-ready/CSV/PDF/TXT.
+- **Knowledge Base Topics:**
+  - Users can CRUD topics with descriptions
+  - Users can AI-derive topics (name + description) from **either KB source OR pasted text**
+  - Users can toggle per topic between **User-written** and **AI-derived** description, including regenerate
+  - TopicSelector shows merged suggestions and surfaces descriptions for managed topics
 - **Reliability:** Batch generation shows per-item results and handles partial failures with retry.
-- **Brand cohesion:** UI feels consistent with My Date Jar tone and styling.
-- **Testing:** Each phase ends with a successful end-to-end run and no core regressions.
+- **Brand cohesion:** UI stays consistent with current My Date Jar styling rules (black primary buttons, purple accents).
+- **Testing:** New Topics UI flows pass frontend tests and do not regress blog/newsletter generation flows.

@@ -287,3 +287,45 @@ async def summarize_source(text: str) -> dict:
     data.setdefault("topics", [])
     data.setdefault("tone", "")
     return data
+
+
+
+TOPIC_SYSTEM = (
+    "You build a topic knowledge base for a warm lifestyle/date-ideas brand. "
+    "You ALWAYS respond with a single valid JSON object and nothing else."
+)
+
+
+async def derive_topics(text: str, count: int = 8) -> list:
+    """Derive a list of {name, description} topics from source text."""
+    prompt = (
+        f"From the following content, extract up to {count} distinct, reusable content TOPICS. "
+        "For each topic give a short name (2-4 words) and a 1-2 sentence description explaining the topic "
+        "and why it makes good content.\n"
+        'Return ONLY JSON: {"topics": [{"name": "string", "description": "string"}]}\n\n'
+        "CONTENT:\n" + (text or "")[:6000]
+    )
+    try:
+        data = await _chat_json("gemini-2.5-flash", TOPIC_SYSTEM, prompt)
+    except Exception:
+        return []
+    out = []
+    for t in data.get("topics", []) or []:
+        name = (t.get("name") or "").strip()
+        if name:
+            out.append({"name": name, "description": (t.get("description") or "").strip()})
+    return out
+
+
+async def describe_topic(name: str, context: str = "") -> str:
+    """Generate a concise description for a single topic, optionally using context."""
+    ctx = f"\nReference context:\n{context[:3000]}\n" if context else ""
+    prompt = (
+        f'Write a concise 1-2 sentence description for the content topic: "{name}".{ctx}'
+        '\nReturn ONLY JSON: {"description": "string"}'
+    )
+    try:
+        data = await _chat_json("gemini-2.5-flash", TOPIC_SYSTEM, prompt)
+        return (data.get("description") or "").strip()
+    except Exception:
+        return ""

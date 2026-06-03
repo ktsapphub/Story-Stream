@@ -150,6 +150,26 @@ class KnowledgeUrlRequest(BaseModel):
     url: str
 
 
+class TopicCreate(BaseModel):
+    name: str
+    description: str = ""
+
+
+class TopicUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
+class TopicDerive(BaseModel):
+    source_id: Optional[str] = None
+    text: Optional[str] = None
+    count: int = 8
+
+
+class TopicDescribe(BaseModel):
+    source_id: Optional[str] = None
+
+
 class SaveContentRequest(BaseModel):
     id: Optional[str] = None
     type: str = "blog"
@@ -575,14 +595,119 @@ async def list_knowledge(user: dict = Depends(get_current_user)):
 
 @api_router.get("/knowledge/topics")
 async def knowledge_topics(user: dict = Depends(get_current_user)):
-    docs = await db.knowledge.find({"owner": user["id"], "is_deleted": {"$ne": True}}, {"_id": 0, "topics": 1}).to_list(500)
     seen = {}
+    # managed topics first
+    managed = await db.kb_topics.find({"owner": user["id"], "is_deleted": {"$ne": True}}, {"_id": 0, "name": 1}).to_list(500)
+    for d in managed:
+        key = str(d.get("name", "")).strip()
+        if key and key.lower() not in seen:
+            seen[key.lower()] = key
+    # source-derived topics
+    docs = await db.knowledge.find({"owner": user["id"], "is_deleted": {"$ne": True}}, {"_id": 0, "topics": 1}).to_list(500)
     for d in docs:
         for t in (d.get("topics") or []):
             key = str(t).strip()
             if key and key.lower() not in seen:
                 seen[key.lower()] = key
     return {"topics": sorted(seen.values(), key=str.lower)}
+
+
+# ----------------------- Managed Topics repository -----------------------
+def make_topic_doc(name: str, description: str, owner: str, source: str = "user", source_id=None) -> dict:
+    return {
+        "id": str(uuid.uuid4()),
+        "owner": owner,
+        "name": name.strip(),
+        "description": (description or "").strip(),
+        "source": source,
+        "source_id": source_id,
+        "is_deleted": False,
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+
+
+@api_router.get("/topics")
+async def list_topics(user: dict = Depends(get_current_user)):
+    return await db.kb_topics.find({"owner": user["id"], "is_deleted": {"$ne": True}}, {"_id": 0}).sort("name", 1).to_list(1000)
+
+
+@api_router.post("/topics")
+async def create_topic(req: TopicCreate, user: dict = Depends(get_current_user)):
+    name = req.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Topic name is required")
+    existing = await db.kb_topics.find_one({"owner": user["id"], "name": {"$regex": f"^{name}$", "$options": "i"}, "is_deleted": {"$ne": True}})
+    if existing:
+        raise HTTPException(status_code=400, detail="That topic already exists")
+    doc = make_topic_doc(name, req.description, user["id"], "user")
+    await db.kb_topics.insert_one(dict(doc))
+    return clean(doc)
+
+
+@api_router.put("/topics/{topic_id}")
+async def update_topic(topic_id: str, req: TopicUpdate, user: dict = Depends(get_current_user)):
+    existing = await db.kb_topics.find_one({"id": topic_id, "owner": user["id"]})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Topic not found")
+    patch = {"updated_at": now_iso()}
+    if req.name is not None and req.name.strip():
+        patch["name"] = req.name.strip()
+    if req.description is not None:
+        patch["description"] = req.description.strip()
+    await db.kb_topics.update_one({"id": topic_id, "owner": user["id"]}, {"$set": patch})
+    return await db.kb_topics.find_one({"id": topic_id}, {"_id": 0})
+
+
+@api_router.delete("/topics/{topic_id}")
+async def delete_topic(topic_id: str, user: dict = Depends(get_current_user)):
+    await db.kb_topics.update_one({"id": topic_id, "owner": user["id"]}, {"$set": {"is_deleted": True}})
+    return {"ok": True}
+
+
+@api_router.post("/topics/derive")
+async def derive_topics(req: TopicDerive, user: dict = Depends(get_current_user)):
+    text = req.text or ""
+    source_id = req.source_id
+    if source_id:
+        src = await db.knowledge.find_one({"id": source_id, "owner": user["id"]}, {"_id": 0})
+        if not src:
+            raise HTTPException(status_code=404, detail="Source not found")
+        text = src.get("content", "") or src.get("summary", "")
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Provide a source or text to derive topics from")
+    derived = await llm.derive_topics(text, max(1, min(req.count, 15)))
+    if not derived:
+        raise HTTPException(status_code=502, detail="Could not derive topics. Try again.")
+    # existing names (lowercase) to dedupe
+    existing = await db.kb_topics.find({"owner": user["id"], "is_deleted": {"$ne": True}}, {"_id": 0, "name": 1}).to_list(1000)
+    have = {e["name"].lower() for e in existing}
+    added = []
+    for t in derived:
+        if t["name"].lower() in have:
+            continue
+        have.add(t["name"].lower())
+        doc = make_topic_doc(t["name"], t.get("description", ""), user["id"], "derived", source_id)
+        await db.kb_topics.insert_one(dict(doc))
+        added.append(clean(doc))
+    return {"added": added, "skipped": len(derived) - len(added)}
+
+
+@api_router.post("/topics/{topic_id}/describe")
+async def describe_topic(topic_id: str, req: TopicDescribe, user: dict = Depends(get_current_user)):
+    topic = await db.kb_topics.find_one({"id": topic_id, "owner": user["id"]}, {"_id": 0})
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+    context = ""
+    if req.source_id:
+        src = await db.knowledge.find_one({"id": req.source_id, "owner": user["id"]}, {"_id": 0})
+        if src:
+            context = src.get("content", "") or src.get("summary", "")
+    desc = await llm.describe_topic(topic["name"], context)
+    if not desc:
+        raise HTTPException(status_code=502, detail="Could not generate a description. Try again.")
+    await db.kb_topics.update_one({"id": topic_id, "owner": user["id"]}, {"$set": {"description": desc, "source": "derived", "updated_at": now_iso()}})
+    return await db.kb_topics.find_one({"id": topic_id}, {"_id": 0})
 
 
 @api_router.get("/knowledge/{source_id}")
