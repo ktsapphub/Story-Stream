@@ -8,6 +8,12 @@
   - CRUD topic management with descriptions
   - AI-assisted topic derivation (bulk) and per-topic description generation
   - Integration into prompt steering via the existing `TopicSelector`
+- Add a **Settings / Connections hub** (Phase 5) that:
+  - Shows **platform/tech stack** info
+  - Manages API keys + params for integrations (saved in DB, user-scoped) and makes them **live**
+  - Supports **show/hide secret** values
+  - Supports **connection testing** per provider
+  - Shows **usage limits** (live where possible; manual fallback)
 - Ensure UI stays consistent with current **My Date Jar** styling constraints:
   - Black primary buttons
   - Purple `#835ef5` accents
@@ -146,6 +152,122 @@
 
 ---
 
+### Phase 5 — Settings / Connections Hub (NEW)
+**Goal:** centralize platform info and make integrations manageable per logged-in user.
+
+#### 5.1 Scope and UX
+- Accessible to **any logged-in user** (`/settings`).
+- Sections:
+  1) **Platform / Tech Stack**
+     - Frontend: React + Tailwind + shadcn/ui
+     - Backend: FastAPI
+     - Database: MongoDB
+     - LLM: Emergent (OpenAI/Anthropic/Gemini) + Nano Banana image gen
+     - Storage + export stack (as currently implemented)
+  2) **Connections** (grouped cards with status badges)
+     - AI / LLM: Emergent universal key (likely read-only or optional override; see implementation)
+     - Stock images: Pexels, Pixabay, Unsplash
+     - Publishing: WordPress (site URL, app password, username)
+     - Automation/Email (initial placeholders + schema): Zapier, SendGrid, ReachInbox (and extensible registry)
+
+- Each connection card supports:
+  - Enable/disable
+  - Inputs for parameters (provider-specific)
+  - Secret fields with **show/hide** toggle
+  - Save → persists in DB → becomes **live** immediately
+  - Test connection button (runs backend check)
+  - Usage/limits:
+    - Live where available (e.g., provider rate-limit headers)
+    - Manual fallback fields (plan limits/notes)
+
+#### 5.2 Backend (FastAPI + MongoDB)
+**Collections**
+- `settings_connections` (new)
+  - `id`, `owner`
+  - `provider` (e.g., `pexels`, `unsplash`, `pixabay`, `wordpress`, `zapier`, `sendgrid`, `reachinbox`, `emergent`)
+  - `enabled` (bool)
+  - `config` (dict of params)
+  - `secrets` (dict of secret values) — stored server-side; never returned in full
+  - `masked` (dict of masked secrets) — returned to UI (e.g., `sk_live_****abcd`)
+  - `manual_limits` (dict)
+  - `status` (`connected` | `not_configured` | `error`)
+  - `last_tested_at`, `last_error`
+  - `usage` (dict: live headers/derived values when available)
+
+**New module**
+- `/app/backend/connections.py`
+  - Connection registry (metadata):
+    - provider key, category, label, fields, which are secrets, supports_test, supports_usage
+    - env fallback mapping (for migration / compatibility)
+  - `platform_info()` function
+  - `mask_secret(value)` helper
+  - `run_test(provider, config, secrets)` implementation per provider:
+    - Stock providers: make a minimal request and capture rate-limit headers when possible
+    - WordPress: validate credentials via WP REST
+    - SendGrid: validate via API key check
+    - Zapier: webhook ping test (user supplies hook URL) or connection placeholder
+    - ReachInbox: placeholder until exact API spec provided
+  - `extract_usage(provider, response_headers)` where applicable
+
+**Endpoints**
+- `GET /api/settings/platform`
+  - Returns stack info + current version/build info.
+- `GET /api/settings/connections`
+  - Returns list of all providers from registry with per-owner stored config, masked secrets, enabled flag, status, last tested, usage.
+- `PUT /api/settings/connections/{provider}`
+  - Upserts provider config/secrets, stores encrypted/plain server-side (MVP can store plain; later add encryption-at-rest)
+  - Auto-runs `test` after save and stores status + usage.
+- `POST /api/settings/connections/{provider}/test`
+  - Runs test against currently saved config and returns updated status/usage.
+- `DELETE /api/settings/connections/{provider}`
+  - Disables and clears stored secrets/config for that provider.
+
+**Refactor: make stock provider keys dynamic (DB-first)**
+- Update stock search endpoint path to resolve per-user provider keys:
+  - Read keys from `settings_connections` if enabled; fallback to env keys for backward compatibility.
+- Refactor `/app/backend/stock.py`:
+  - Add `search(provider, query, page, per_page, kind, keys: dict | None = None)`
+  - `provider_status(keys)` to compute status from provided keys.
+  - Keep current env-based methods for compatibility, but prefer injected keys.
+
+#### 5.3 Frontend (React)
+- Add new route + nav:
+  - `App.js`: route `/settings`
+  - `AppShell.js`: add sidebar item “Settings”
+
+**API client** (`/app/frontend/src/lib/api.js`)
+- `getPlatformInfo()`
+- `getConnections()`
+- `saveConnection(provider, payload)`
+- `testConnection(provider)`
+- `deleteConnection(provider)`
+
+**Settings Page UI** (`/app/frontend/src/pages/Settings.js`)
+- Platform card: tech stack list + build metadata.
+- Connections:
+  - Grouped sections (LLM, Stock, Publishing, Automation/Email)
+  - Each provider card:
+    - Enabled switch
+    - Editable params fields
+    - Secret inputs with show/hide
+    - Masked display when hidden
+    - Save/Test/Disconnect actions
+    - Status badge and “Last tested” timestamp
+    - Usage/limits panel (live + manual fields)
+
+#### 5.4 Testing
+- Backend tests:
+  - Save keys → test endpoint returns connected
+  - Stock search uses DB-stored keys (no env required)
+  - Masking never returns full secret
+- Frontend tests:
+  - Settings page loads
+  - Show/hide secret works
+  - Save triggers test + updates status badge
+  - Stock integration becomes live after saving keys
+
+---
+
 ## 3. Next Actions
 
 ### Completed (Confirmed)
@@ -155,7 +277,7 @@
 4. ~~Implement Phase 3 Auth (JWT) + user scoping.~~ DONE
 5. ~~Rebrand UI: black primary buttons, remove heart logo, replace brown with `#835ef5` purple accents.~~ DONE
 6. ~~Add Topic Selector (type-or-select) and topic steering in generate endpoints.~~ DONE
-7. ~~Add stock media search architecture (Pexels/Pixabay/Unsplash) with mocked “needs API key” state.~~ DONE (blocked on user keys)
+7. ~~Add stock media search architecture (Pexels/Pixabay/Unsplash) with mocked “needs API key” state.~~ DONE (blocked on keys)
 8. ~~Knowledge Base Topics Management (backend + frontend + testing).~~ DONE
    - Backend: `kb_topics` collection, CRUD endpoints, AI derive + describe endpoints, LLM helpers
    - Frontend: `TopicsManager` UI, integrated into Knowledge Base as `Sources | Topics` tabs
@@ -163,12 +285,14 @@
    - Testing: frontend testing agent **100% pass** (`/app/test_reports/iteration_4.json`), zero bugs
 
 ### Current Focus (P0)
-- **Unblock Stock Providers by adding API keys** (requires user input)
-  - Add keys to `.env`: `PEXELS_API_KEY`, `PIXABAY_API_KEY`, `UNSPLASH_ACCESS_KEY`
-  - Then run both backend + frontend tests to verify live search + insert-to-library flow
+- **Phase 5: Settings / Connections Hub**
+  - Backend: `connections.py` registry + settings endpoints + DB persistence + masking
+  - Refactor stock to use DB-first per-user keys
+  - Frontend: `/settings` page UI + nav entry + API client
+  - Testing: backend + frontend tests
 
 ### Blocked / Waiting
-- Stock image providers: requires user to supply API keys in `.env` (`PEXELS_API_KEY`, `PIXABAY_API_KEY`, `UNSPLASH_ACCESS_KEY`).
+- Nothing blocked once Settings is implemented (keys will be entered in-app).
 
 ### Operational reminder
 - `ENABLE_TEST_BYPASS` is currently `true` in backend `.env`. Keep for testing; must be set to `false` before production.
@@ -182,8 +306,9 @@
 - Phase 3.1 (Rebrand): COMPLETE (black buttons, heart removed, purple accents).
 - Phase 4 (New features): PARTIAL
   - Topic Selector + topic steering: COMPLETE
-  - Stock media search: COMPLETE but BLOCKED (API keys missing)
-  - **Knowledge Base Topics Management:** COMPLETE (backend + frontend) and tested (iteration_4.json)
+  - Stock media search: COMPLETE but previously BLOCKED (API keys missing) → will be unblocked via Phase 5 Settings
+  - Knowledge Base Topics Management: COMPLETE and tested (iteration_4.json)
+- Phase 5 (Settings / Connections Hub): NOT STARTED.
 
 ---
 
@@ -196,6 +321,14 @@
   - Users can toggle per topic between **User-written** and **AI-derived** description, including regenerate
   - TopicSelector shows merged suggestions and surfaces descriptions for managed topics
   - Feature verified by frontend testing agent (100% pass)
+- **Settings / Connections Hub (Phase 5):**
+  - `/settings` accessible to any logged-in user
+  - Tech stack info displayed
+  - Connections can be saved in DB (owner-scoped) and become live
+  - Secrets are masked by default; show/hide works
+  - Test connection works per provider and persists status
+  - Usage limits show live data where available, with manual fallback fields
+  - Stock search works using DB-stored keys (no env required)
 - **Reliability:** Batch generation shows per-item results and handles partial failures with retry.
 - **Brand cohesion:** UI stays consistent with current My Date Jar styling rules (black buttons, purple accents).
-- **Testing:** Knowledge Base Topics UI flows pass and do not regress blog/newsletter generation flows.
+- **Testing:** Settings page and connection flows pass backend+frontend tests and do not regress existing studios.
