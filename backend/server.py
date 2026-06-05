@@ -22,6 +22,7 @@ import knowledge as kb
 import exporters
 import auth
 import stock
+import connections as conns
 
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
@@ -168,6 +169,12 @@ class TopicDerive(BaseModel):
 
 class TopicDescribe(BaseModel):
     source_id: Optional[str] = None
+
+
+class ConnectionSave(BaseModel):
+    values: dict = {}
+    enabled: Optional[bool] = None
+    manual_limit: Optional[str] = None
 
 
 class SaveContentRequest(BaseModel):
@@ -800,10 +807,106 @@ async def export(content_id: str, format: str = Query("html"), user: dict = Depe
                     headers={"Content-Disposition": f'attachment; filename="{safe}.{ext}"'})
 
 
+# ----------------------- Settings / Connections -----------------------
+async def resolve_stock_keys(owner: str) -> dict:
+    """Per-user stock provider keys: DB value (if enabled) wins, else env fallback."""
+    keys = {}
+    for p in ("pexels", "pixabay", "unsplash"):
+        s = await db.settings.find_one({"owner": owner, "provider": p}, {"_id": 0})
+        if s and s.get("enabled") is False:
+            keys[p] = ""
+        else:
+            keys[p] = conns.effective_value(p, "api_key", (s or {}).get("values"))
+    return keys
+
+
+async def _connection_view(owner: str, c: dict) -> dict:
+    s = await db.settings.find_one({"owner": owner, "provider": c["key"]}, {"_id": 0})
+    saved_values = (s or {}).get("values")
+    values = conns.effective_values(c["key"], saved_values)
+    configured = conns.is_configured(c["key"], saved_values)
+    enabled = (s or {}).get("enabled")
+    if enabled is None:
+        enabled = configured
+    return {
+        **c,
+        "values": values,
+        "configured": configured,
+        "enabled": bool(enabled),
+        "manual_limit": (s or {}).get("manual_limit", ""),
+        "status": (s or {}).get("status"),
+    }
+
+
+@api_router.get("/settings/platform")
+async def settings_platform(user: dict = Depends(get_current_user)):
+    return conns.platform_info()
+
+
+@api_router.get("/settings/connections")
+async def list_connections(user: dict = Depends(get_current_user)):
+    out = []
+    for c in conns.CONNECTIONS:
+        out.append(await _connection_view(user["id"], c))
+    return {"connections": out, "categories": list(dict.fromkeys(c["category"] for c in conns.CONNECTIONS))}
+
+
+@api_router.put("/settings/connections/{provider}")
+async def save_connection(provider: str, req: ConnectionSave, user: dict = Depends(get_current_user)):
+    c = conns.CONN_BY_KEY.get(provider)
+    if not c:
+        raise HTTPException(status_code=404, detail="Unknown connection")
+    existing = await db.settings.find_one({"owner": user["id"], "provider": provider}, {"_id": 0})
+    values = dict((existing or {}).get("values") or {})
+    if not c.get("managed"):
+        for f in c["fields"]:
+            fk = f["key"]
+            if fk in req.values:
+                v = req.values.get(fk)
+                values[fk] = v.strip() if isinstance(v, str) else v
+    patch = {"owner": user["id"], "provider": provider, "values": values, "updated_at": now_iso()}
+    if req.enabled is not None:
+        patch["enabled"] = req.enabled
+    if req.manual_limit is not None:
+        patch["manual_limit"] = req.manual_limit
+    # auto-test on save when configured
+    if c.get("supports_test") and conns.is_configured(provider, values):
+        result = await asyncio.to_thread(conns.run_test, provider, conns.effective_values(provider, values))
+        patch["status"] = {**result, "checked_at": now_iso()}
+    await db.settings.update_one({"owner": user["id"], "provider": provider}, {"$set": patch}, upsert=True)
+    return await _connection_view(user["id"], c)
+
+
+@api_router.post("/settings/connections/{provider}/test")
+async def test_connection(provider: str, user: dict = Depends(get_current_user)):
+    c = conns.CONN_BY_KEY.get(provider)
+    if not c:
+        raise HTTPException(status_code=404, detail="Unknown connection")
+    s = await db.settings.find_one({"owner": user["id"], "provider": provider}, {"_id": 0})
+    values = conns.effective_values(provider, (s or {}).get("values"))
+    result = await asyncio.to_thread(conns.run_test, provider, values)
+    status = {**result, "checked_at": now_iso()}
+    await db.settings.update_one(
+        {"owner": user["id"], "provider": provider},
+        {"$set": {"owner": user["id"], "provider": provider, "status": status, "updated_at": now_iso()}},
+        upsert=True,
+    )
+    return status
+
+
+@api_router.delete("/settings/connections/{provider}")
+async def disconnect_connection(provider: str, user: dict = Depends(get_current_user)):
+    if provider not in conns.CONN_BY_KEY:
+        raise HTTPException(status_code=404, detail="Unknown connection")
+    await db.settings.delete_one({"owner": user["id"], "provider": provider})
+    return {"ok": True}
+
+
 # ----------------------- Stock media -----------------------
 @api_router.get("/stock/providers")
 async def stock_providers(user: dict = Depends(get_current_user)):
-    return {"providers": stock.provider_status()}
+    keys = await resolve_stock_keys(user["id"])
+    return {"providers": stock.provider_status(keys)}
 
 
 @api_router.get("/stock/search")
@@ -814,13 +917,14 @@ async def stock_search(
     page: int = Query(1, ge=1),
     user: dict = Depends(get_current_user),
 ):
-    status = stock.provider_status()
+    keys = await resolve_stock_keys(user["id"])
+    status = stock.provider_status(keys)
     if provider != "all" and not status.get(provider):
-        raise HTTPException(status_code=400, detail=f"{provider.capitalize()} is not configured. Add its API key to enable search.")
+        raise HTTPException(status_code=400, detail=f"{provider.capitalize()} is not configured. Add its API key in Settings to enable search.")
     if provider == "all" and not any(status.values()):
-        raise HTTPException(status_code=400, detail="No stock providers configured yet. Add a Pexels, Pixabay, or Unsplash API key to enable search.")
+        raise HTTPException(status_code=400, detail="No stock providers configured yet. Add a Pexels, Pixabay, or Unsplash API key in Settings to enable search.")
     try:
-        results = await asyncio.to_thread(stock.search, provider, query, page, 24, kind)
+        results = await asyncio.to_thread(stock.search, provider, query, page, 24, kind, keys)
     except Exception as e:
         logger.exception("stock search failed")
         raise HTTPException(status_code=502, detail=f"Stock search failed: {e}")

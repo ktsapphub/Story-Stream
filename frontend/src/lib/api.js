@@ -101,4 +101,11 @@ export const downloadExport = async (id, format, filename) => {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
+// ---- settings / connections ----
+export const getPlatformInfo = () => http.get("/settings/platform").then((r) => r.data);
+export const getConnections = () => http.get("/settings/connections").then((r) => r.data);
+export const saveConnection = (provider, payload) => http.put(`/settings/connections/${provider}`, payload).then((r) => r.data);
+export const testConnection = (provider) => http.post(`/settings/connections/${provider}/test`).then((r) => r.data);
+export const deleteConnection = (provider) => http.delete(`/settings/connections/${provider}`).then((r) => r.data);
+
 export { http };

@@ -1,0 +1,168 @@
+{
+  "timestamp": "2026-06-05T17:30:15.562626",
+  "total_tests": 32,
+  "passed_tests": 31,
+  "failed_tests": 1,
+  "results": [
+    {
+      "test": "Login",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "GET /api/settings/platform",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Platform groups structure",
+      "passed": true,
+      "details": "Found groups: ['Frontend', 'Backend', 'Database & Storage', 'AI & Generation', 'Infrastructure']"
+    },
+    {
+      "test": "GET /api/settings/connections",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Connection count (8 expected)",
+      "passed": true,
+      "details": "Found 8 connections"
+    },
+    {
+      "test": "All expected providers present",
+      "passed": true,
+      "details": "Found: ['ai_llm', 'pexels', 'pixabay', 'unsplash', 'wordpress', 'zapier', 'sendgrid', 'reachinbox']"
+    },
+    {
+      "test": "All expected categories present",
+      "passed": true,
+      "details": "Found: ['AI & Content', 'Stock Images', 'Publishing', 'Automation & Email']"
+    },
+    {
+      "test": "AI/LLM is managed",
+      "passed": true,
+      "details": "Managed: True"
+    },
+    {
+      "test": "PUT /api/settings/connections/pexels (save)",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Pexels configured flag",
+      "passed": true,
+      "details": "Configured: True"
+    },
+    {
+      "test": "Pexels API key saved",
+      "passed": true,
+      "details": "Key: test-pexels-key-12345"
+    },
+    {
+      "test": "Auto-test ran on save",
+      "passed": true,
+      "details": "Status: {'connected': True, 'message': 'Connected to Pexels.', 'usage': {'limit': 25000, 'remaining': 24998, 'reset': '1780637540'}, 'checked_at': '2026-06-05T17:30:13.523812+00:00'}"
+    },
+    {
+      "test": "POST /api/settings/connections/ai_llm/test",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "ai_llm test result",
+      "passed": true,
+      "details": "Connected: True, Message: Universal key is active and powering AI features., Checked: 2026-06-05T17:30:13.688514+00:00"
+    },
+    {
+      "test": "POST /api/settings/connections/pexels/test",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "pexels test result",
+      "passed": true,
+      "details": "Connected: True, Message: Connected to Pexels., Checked: 2026-06-05T17:30:13.902959+00:00"
+    },
+    {
+      "test": "GET /api/stock/providers (after Pexels save)",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Pexels configured in stock providers",
+      "passed": true,
+      "details": "Providers: {'pexels': True, 'pixabay': False, 'unsplash': False}"
+    },
+    {
+      "test": "GET /api/stock/search?query=love&provider=pexels",
+      "passed": false,
+      "details": "Expected 200, got 502. Response: {\"detail\":\"Stock search failed: 401 Client Error: Unauthorized for url: https://api.pexels.com/v1/search?query=love&page=1&per_page=24\"}"
+    },
+    {
+      "test": "PUT /api/settings/connections/wordpress (multiple fields)",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "WordPress all fields saved",
+      "passed": true,
+      "details": "Values: {'site_url': 'https://example.com', 'username': 'admin', 'app_password': 'test password 1234'}"
+    },
+    {
+      "test": "PUT /api/settings/connections/sendgrid (with manual_limit)",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Manual limit saved",
+      "passed": true,
+      "details": "Manual limit: 10,000 emails / month"
+    },
+    {
+      "test": "DELETE /api/settings/connections/pexels",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Verify pexels cleared (re-GET connections)",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "pexels cleared",
+      "passed": true,
+      "details": "Configured after delete: False"
+    },
+    {
+      "test": "DELETE /api/settings/connections/wordpress",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Verify wordpress cleared (re-GET connections)",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "wordpress cleared",
+      "passed": true,
+      "details": "Configured after delete: False"
+    },
+    {
+      "test": "DELETE /api/settings/connections/sendgrid",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Verify sendgrid cleared (re-GET connections)",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "sendgrid cleared",
+      "passed": true,
+      "details": "Configured after delete: False"
+    }
+  ]
+}

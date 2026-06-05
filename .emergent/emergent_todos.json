@@ -1,22 +1,30 @@
 [
   {
-    "content": "Build TopicsManager component (list, add, edit, delete, derive, per-topic Written/AI toggle)",
+    "content": "Backend: create connections.py registry (providers, fields, env fallback, run_test, usage extraction, platform_info)",
     "status": "completed"
   },
   {
-    "content": "Integrate Topics into KnowledgeBase.js via Sources | Topics tabs",
+    "content": "Backend: add settings endpoints in server.py (platform, list, save+autotest, test, disconnect)",
     "status": "completed"
   },
   {
-    "content": "Enrich TopicSelector dropdown to show topic descriptions",
+    "content": "Backend: refactor stock.py to accept keys dict; wire server stock endpoints to DB keys",
     "status": "completed"
   },
   {
-    "content": "Lint + screenshot verify UI",
+    "content": "Frontend: add api.js client functions for settings",
     "status": "completed"
   },
   {
-    "content": "Test Topics CRUD + derive flows with testing agent (frontend)",
+    "content": "Frontend: build Settings page (platform + connection cards, show/hide secret, test, usage, manual limit)",
     "status": "completed"
+  },
+  {
+    "content": "Frontend: add /settings route + Settings nav item",
+    "status": "completed"
+  },
+  {
+    "content": "Lint + screenshot verify; test backend + frontend with testing agent",
+    "status": "in_progress"
   }
 ]

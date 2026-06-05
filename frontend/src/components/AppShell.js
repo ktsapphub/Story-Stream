@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, PenLine, Mail, Library, Image as ImageIcon,
-  BookOpen, Menu, Sparkles, LogOut,
+  BookOpen, Menu, Sparkles, LogOut, Settings as SettingsIcon,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ const NAV = [
   { to: "/library", label: "Content Library", icon: Library, testid: "sidebar-nav-content-library", accent: "--accent-content-library" },
   { to: "/media", label: "Media Library", icon: ImageIcon, testid: "sidebar-nav-media-library", accent: "--accent-media-library" },
   { to: "/knowledge", label: "Knowledge Base", icon: BookOpen, testid: "sidebar-nav-knowledge-base", accent: "--accent-knowledge-base" },
+  { to: "/settings", label: "Settings", icon: SettingsIcon, testid: "sidebar-nav-settings", accent: "--primary" },
 ];
 
 const NavItems = ({ onClick }) => (
@@ -67,6 +68,7 @@ const Brand = () => (
 
 const UserMenu = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const initials = (user?.name || user?.email || "?").slice(0, 2).toUpperCase();
   return (
     <DropdownMenu>
@@ -79,6 +81,9 @@ const UserMenu = () => {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="truncate">{user?.email}</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => navigate("/settings")} data-testid="usermenu-settings" className="gap-2">
+          <SettingsIcon className="h-4 w-4" /> Settings
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={logout} data-testid="logout-button" className="gap-2 text-destructive focus:text-destructive">
           <LogOut className="h-4 w-4" /> Log out
         </DropdownMenuItem>

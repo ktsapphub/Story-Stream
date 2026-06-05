@@ -1,7 +1,7 @@
 """Stock media search across Pexels, Pixabay, and Unsplash.
 
-Keys are read from env vars (added by the user later):
-  PEXELS_API_KEY, PIXABAY_API_KEY, UNSPLASH_ACCESS_KEY
+Keys are resolved per-user (DB settings, with env fallback) by the caller and
+passed in as a `keys` dict: {"pexels": ..., "pixabay": ..., "unsplash": ...}.
 A provider with a missing/empty key is simply skipped/disabled.
 """
 import os
@@ -14,25 +14,28 @@ APP_NAME = "content_studio_mydatejar"
 
 PROVIDERS = ["pexels", "pixabay", "unsplash"]
 
-
-def _key(name: str) -> str:
-    return (os.environ.get(name) or "").strip()
-
-
-def provider_status() -> dict:
-    return {
-        "pexels": bool(_key("PEXELS_API_KEY")),
-        "pixabay": bool(_key("PIXABAY_API_KEY")),
-        "unsplash": bool(_key("UNSPLASH_ACCESS_KEY")),
-    }
+_ENV_MAP = {
+    "pexels": "PEXELS_API_KEY",
+    "pixabay": "PIXABAY_API_KEY",
+    "unsplash": "UNSPLASH_ACCESS_KEY",
+}
 
 
-def is_configured(provider: str) -> bool:
-    return provider_status().get(provider, False)
+def _resolve_key(provider: str, keys) -> str:
+    if keys and (keys.get(provider) or "").strip():
+        return keys[provider].strip()
+    return (os.environ.get(_ENV_MAP.get(provider, "")) or "").strip()
 
 
-def search_pexels(query: str, page: int = 1, per_page: int = 20, kind: str = "photo"):
-    key = _key("PEXELS_API_KEY")
+def provider_status(keys=None) -> dict:
+    return {p: bool(_resolve_key(p, keys)) for p in PROVIDERS}
+
+
+def is_configured(provider: str, keys=None) -> bool:
+    return bool(_resolve_key(provider, keys))
+
+
+def search_pexels(query: str, page: int = 1, per_page: int = 20, kind: str = "photo", key: str = ""):
     if not key:
         return []
     headers = {"Authorization": key}
@@ -70,8 +73,7 @@ def search_pexels(query: str, page: int = 1, per_page: int = 20, kind: str = "ph
     return out
 
 
-def search_pixabay(query: str, page: int = 1, per_page: int = 20, kind: str = "photo"):
-    key = _key("PIXABAY_API_KEY")
+def search_pixabay(query: str, page: int = 1, per_page: int = 20, kind: str = "photo", key: str = ""):
     if not key:
         return []
     per_page = max(3, min(per_page, 200))
@@ -109,8 +111,7 @@ def search_pixabay(query: str, page: int = 1, per_page: int = 20, kind: str = "p
     return out
 
 
-def search_unsplash(query: str, page: int = 1, per_page: int = 20, kind: str = "photo"):
-    key = _key("UNSPLASH_ACCESS_KEY")
+def search_unsplash(query: str, page: int = 1, per_page: int = 20, kind: str = "photo", key: str = ""):
     if not key or kind == "video":
         return []
     headers = {"Authorization": f"Client-ID {key}"}
@@ -139,18 +140,19 @@ def search_unsplash(query: str, page: int = 1, per_page: int = 20, kind: str = "
 _SEARCHERS = {"pexels": search_pexels, "pixabay": search_pixabay, "unsplash": search_unsplash}
 
 
-def search(provider: str, query: str, page: int = 1, per_page: int = 20, kind: str = "photo"):
+def search(provider: str, query: str, page: int = 1, per_page: int = 20, kind: str = "photo", keys=None):
     """Search a single provider or 'all'. Returns list of normalized items."""
     if provider == "all":
         results = []
         for p in PROVIDERS:
-            if is_configured(p):
+            key = _resolve_key(p, keys)
+            if key:
                 try:
-                    results.extend(_SEARCHERS[p](query, page, per_page, kind))
+                    results.extend(_SEARCHERS[p](query, page, per_page, kind, key))
                 except Exception:
                     logger.exception("stock search failed: %s", p)
         return results
     fn = _SEARCHERS.get(provider)
     if not fn:
         raise ValueError(f"Unknown provider: {provider}")
-    return fn(query, page, per_page, kind)
+    return fn(query, page, per_page, kind, _resolve_key(provider, keys))

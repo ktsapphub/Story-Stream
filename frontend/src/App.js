@@ -12,6 +12,7 @@ import NewsletterStudio from "@/pages/NewsletterStudio";
 import ContentLibrary from "@/pages/ContentLibrary";
 import MediaLibrary from "@/pages/MediaLibrary";
 import KnowledgeBase from "@/pages/KnowledgeBase";
+import Settings from "@/pages/Settings";
 
 const FullLoader = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
@@ -49,6 +50,7 @@ function App() {
             <Route path="/library" element={<Protected><ContentLibrary /></Protected>} />
             <Route path="/media" element={<Protected><MediaLibrary /></Protected>} />
             <Route path="/knowledge" element={<Protected><KnowledgeBase /></Protected>} />
+            <Route path="/settings" element={<Protected><Settings /></Protected>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
