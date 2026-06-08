@@ -37,6 +37,21 @@ const fieldVisible = (f, values) => {
   return (cond.in || []).includes((values || {})[cond.field]);
 };
 
+const fieldRequired = (f, values) => {
+  if (f.required) return true;
+  const rw = f.required_when;
+  if (rw) return (rw.in || []).includes((values || {})[rw.field]);
+  return false;
+};
+
+const FieldLabel = ({ htmlFor, label, required, conditional }) => (
+  <Label htmlFor={htmlFor}>
+    {label}
+    {required ? <span className="text-destructive"> *</span>
+      : (conditional ? <span className="text-muted-foreground font-normal"> (optional)</span> : null)}
+  </Label>
+);
+
 const StatusBadge = ({ configured, status }) => {
   if (status?.connected) {
     return (
@@ -59,11 +74,11 @@ const StatusBadge = ({ configured, status }) => {
   );
 };
 
-const SecretField = ({ field, value, onChange, testId }) => {
+const SecretField = ({ field, value, onChange, testId, required, conditional }) => {
   const [show, setShow] = useState(false);
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={testId}>{field.label}{field.required && <span className="text-destructive"> *</span>}</Label>
+      <FieldLabel htmlFor={testId} label={field.label} required={required} conditional={conditional} />
       <div className="relative">
         <Input
           id={testId}
@@ -201,10 +216,12 @@ const ConnectionCard = ({ conn, onChanged }) => {
       <div className="grid grid-cols-1 gap-3">
         {conn.fields.filter((f) => fieldVisible(f, values)).map((f) => {
           const tid = `conn-${conn.key}-${f.key}`;
+          const required = fieldRequired(f, values);
+          const conditional = !!f.required_when;
           if (f.type === "select") {
             return (
               <div key={f.key} className="space-y-1.5">
-                <Label htmlFor={tid}>{f.label}{f.required && <span className="text-destructive"> *</span>}</Label>
+                <FieldLabel htmlFor={tid} label={f.label} required={required} conditional={conditional} />
                 <Select value={values[f.key] || f.default || ""} onValueChange={(v) => setField(f.key, v)}>
                   <SelectTrigger id={tid} className="rounded-xl" data-testid={tid}><SelectValue placeholder="Select…" /></SelectTrigger>
                   <SelectContent>
@@ -215,11 +232,11 @@ const ConnectionCard = ({ conn, onChanged }) => {
             );
           }
           if (f.secret) {
-            return <SecretField key={f.key} field={f} value={values[f.key]} onChange={(v) => setField(f.key, v)} testId={tid} />;
+            return <SecretField key={f.key} field={f} value={values[f.key]} onChange={(v) => setField(f.key, v)} testId={tid} required={required} conditional={conditional} />;
           }
           return (
             <div key={f.key} className="space-y-1.5">
-              <Label htmlFor={tid}>{f.label}{f.required && <span className="text-destructive"> *</span>}</Label>
+              <FieldLabel htmlFor={tid} label={f.label} required={required} conditional={conditional} />
               <Input id={tid} value={values[f.key] || ""} onChange={(e) => setField(f.key, e.target.value)} placeholder={f.placeholder} className="rounded-xl" data-testid={tid} />
             </div>
           );

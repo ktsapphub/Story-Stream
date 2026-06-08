@@ -91,8 +91,9 @@ CONNECTIONS = [
                  {"value": "app_password", "label": "Application Password (username + password)"},
                  {"value": "api_key", "label": "API Key (Bearer token)"},
              ]},
-            {"key": "username", "label": "Username", "type": "text", "secret": False, "required": True, "placeholder": "admin",
-             "visible_when": {"field": "auth_method", "in": ["app_password"]}},
+            {"key": "username", "label": "Username", "type": "text", "secret": False, "placeholder": "admin",
+             "visible_when": {"field": "auth_method", "in": ["app_password", "api_key"]},
+             "required_when": {"field": "auth_method", "in": ["app_password"]}},
             {"key": "app_password", "label": "Application Password", "type": "password", "secret": True, "required": True, "placeholder": "xxxx xxxx xxxx xxxx",
              "visible_when": {"field": "auth_method", "in": ["app_password"]}},
             {"key": "api_key", "label": "API Key", "type": "password", "secret": True, "required": True, "placeholder": "Your WordPress API key / token",
@@ -180,13 +181,22 @@ def field_visible(field: dict, values: dict) -> bool:
     return (values or {}).get(cond.get("field")) in cond.get("in", [])
 
 
+def field_required(field: dict, values: dict) -> bool:
+    if field.get("required"):
+        return True
+    rw = field.get("required_when")
+    if rw:
+        return (values or {}).get(rw.get("field")) in rw.get("in", [])
+    return False
+
+
 def is_configured(provider: str, saved_values) -> bool:
     c = CONN_BY_KEY.get(provider)
     if not c:
         return False
     vals = effective_values(provider, saved_values)
     for f in c["fields"]:
-        if f.get("required") and field_visible(f, vals):
+        if field_visible(f, vals) and field_required(f, vals):
             if not str(vals.get(f["key"]) or "").strip():
                 return False
     return True
@@ -288,8 +298,14 @@ def _test_wordpress(vals):
             key = (vals.get("api_key") or "").strip()
             if not key:
                 return _result(False, "Add an API key first.")
-            r = requests.get(url, params={"context": "edit"},
-                             headers={"Authorization": f"Bearer {key}"}, timeout=TIMEOUT)
+            user = (vals.get("username") or "").strip()
+            if user:
+                # Plugin-style: username + key via Basic auth (e.g. Application Passwords)
+                r = requests.get(url, params={"context": "edit"}, auth=(user, key), timeout=TIMEOUT)
+            else:
+                # Token-style: key as Bearer token
+                r = requests.get(url, params={"context": "edit"},
+                                 headers={"Authorization": f"Bearer {key}"}, timeout=TIMEOUT)
         else:
             user = (vals.get("username") or "").strip()
             pw = (vals.get("app_password") or "").strip()

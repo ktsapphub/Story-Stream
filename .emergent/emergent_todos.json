@@ -1,18 +1,18 @@
 [
   {
-    "content": "Backend: add WordPress auth_method (select) + api_key field; support conditional fields/defaults in connections.py",
+    "content": "Backend: make username visible in both WP methods with conditional required (required_when); add field_required helper",
     "status": "completed"
   },
   {
-    "content": "Backend: branch _test_wordpress on auth_method (Bearer api_key vs basic app_password)",
+    "content": "Backend: api_key test path uses Basic auth when username present, else Bearer",
     "status": "completed"
   },
   {
-    "content": "Frontend: render select field type + conditional (visible_when) fields in ConnectionCard",
+    "content": "Frontend: support conditional-required (asterisk/optional) for fields incl. select/secret",
     "status": "completed"
   },
   {
-    "content": "Verify build + test WordPress dual-method via screenshot/curl",
+    "content": "Verify build + curl test both WP api_key variants",
     "status": "completed"
   }
 ]
