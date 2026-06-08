@@ -7,6 +7,9 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Settings as SettingsIcon, Eye, EyeOff, Loader2, CheckCircle2, XCircle, CircleDashed,
   Save, Plug, Trash2, ExternalLink, Sparkles, Image as ImageIcon, Globe, Zap, Mail,
   Monitor, Server, Database, Boxes, Gauge, Lock,
@@ -26,6 +29,12 @@ const Icon = ({ name, ...props }) => {
 const fmtTime = (iso) => {
   if (!iso) return "";
   try { return new Date(iso).toLocaleString(); } catch { return ""; }
+};
+
+const fieldVisible = (f, values) => {
+  const cond = f.visible_when;
+  if (!cond) return true;
+  return (cond.in || []).includes((values || {})[cond.field]);
 };
 
 const StatusBadge = ({ configured, status }) => {
@@ -123,13 +132,6 @@ const ConnectionCard = ({ conn, onChanged }) => {
   const [testing, setTesting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
 
-  useEffect(() => {
-    setValues(conn.values || {});
-    setEnabled(conn.enabled);
-    setManualLimit(conn.manual_limit || "");
-    setStatus(conn.status || null);
-  }, [conn]);
-
   const setField = (k, v) => setValues((p) => ({ ...p, [k]: v }));
 
   const save = async () => {
@@ -197,8 +199,21 @@ const ConnectionCard = ({ conn, onChanged }) => {
       </div>
 
       <div className="grid grid-cols-1 gap-3">
-        {conn.fields.map((f) => {
+        {conn.fields.filter((f) => fieldVisible(f, values)).map((f) => {
           const tid = `conn-${conn.key}-${f.key}`;
+          if (f.type === "select") {
+            return (
+              <div key={f.key} className="space-y-1.5">
+                <Label htmlFor={tid}>{f.label}{f.required && <span className="text-destructive"> *</span>}</Label>
+                <Select value={values[f.key] || f.default || ""} onValueChange={(v) => setField(f.key, v)}>
+                  <SelectTrigger id={tid} className="rounded-xl" data-testid={tid}><SelectValue placeholder="Select…" /></SelectTrigger>
+                  <SelectContent>
+                    {f.options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          }
           if (f.secret) {
             return <SecretField key={f.key} field={f} value={values[f.key]} onChange={(v) => setField(f.key, v)} testId={tid} />;
           }
@@ -259,7 +274,6 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
 
   const load = () => {
-    setLoading(true);
     return Promise.all([getPlatformInfo(), getConnections()])
       .then(([p, c]) => { setPlatform(p); setConnections(c.connections || []); setCategories(c.categories || []); })
       .catch(() => toast.error("Could not load settings"))
@@ -338,7 +352,7 @@ export default function Settings() {
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{cat}</h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {(grouped[cat] || []).map((conn) => (
-                  <ConnectionCard key={conn.key} conn={conn} onChanged={load} />
+                  <ConnectionCard key={`${conn.key}:${conn.configured}:${conn.status?.checked_at || ""}`} conn={conn} onChanged={load} />
                 ))}
               </div>
             </section>

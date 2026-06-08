@@ -80,14 +80,23 @@ CONNECTIONS = [
         "name": "WordPress",
         "category": "Publishing",
         "icon": "globe",
-        "description": "Publish content directly to your WordPress site using an application password.",
+        "description": "Publish content directly to your WordPress site. Connect with an application password (username + password) or an API key.",
         "docs_url": "https://wordpress.org/documentation/article/application-passwords/",
         "supports_test": True,
         "supports_live_usage": False,
         "fields": [
             {"key": "site_url", "label": "Site URL", "type": "text", "secret": False, "required": True, "placeholder": "https://yourblog.com"},
-            {"key": "username", "label": "Username", "type": "text", "secret": False, "required": True, "placeholder": "admin"},
-            {"key": "app_password", "label": "Application Password", "type": "password", "secret": True, "required": True, "placeholder": "xxxx xxxx xxxx xxxx"},
+            {"key": "auth_method", "label": "Connection method", "type": "select", "secret": False, "required": True, "default": "app_password",
+             "options": [
+                 {"value": "app_password", "label": "Application Password (username + password)"},
+                 {"value": "api_key", "label": "API Key (Bearer token)"},
+             ]},
+            {"key": "username", "label": "Username", "type": "text", "secret": False, "required": True, "placeholder": "admin",
+             "visible_when": {"field": "auth_method", "in": ["app_password"]}},
+            {"key": "app_password", "label": "Application Password", "type": "password", "secret": True, "required": True, "placeholder": "xxxx xxxx xxxx xxxx",
+             "visible_when": {"field": "auth_method", "in": ["app_password"]}},
+            {"key": "api_key", "label": "API Key", "type": "password", "secret": True, "required": True, "placeholder": "Your WordPress API key / token",
+             "visible_when": {"field": "auth_method", "in": ["api_key"]}},
         ],
     },
     {
@@ -157,8 +166,18 @@ def effective_values(provider: str, saved_values) -> dict:
     c = CONN_BY_KEY.get(provider, {})
     out = {}
     for f in c.get("fields", []):
-        out[f["key"]] = effective_value(provider, f["key"], saved_values)
+        v = effective_value(provider, f["key"], saved_values)
+        if (v is None or v == "") and f.get("default") is not None:
+            v = f["default"]
+        out[f["key"]] = v
     return out
+
+
+def field_visible(field: dict, values: dict) -> bool:
+    cond = field.get("visible_when")
+    if not cond:
+        return True
+    return (values or {}).get(cond.get("field")) in cond.get("in", [])
 
 
 def is_configured(provider: str, saved_values) -> bool:
@@ -167,8 +186,9 @@ def is_configured(provider: str, saved_values) -> bool:
         return False
     vals = effective_values(provider, saved_values)
     for f in c["fields"]:
-        if f.get("required") and not (vals.get(f["key"]) or "").strip():
-            return False
+        if f.get("required") and field_visible(f, vals):
+            if not str(vals.get(f["key"]) or "").strip():
+                return False
     return True
 
 
@@ -257,15 +277,25 @@ def _test_unsplash(vals):
 
 def _test_wordpress(vals):
     site = (vals.get("site_url") or "").strip().rstrip("/")
-    user = (vals.get("username") or "").strip()
-    pw = (vals.get("app_password") or "").strip()
-    if not (site and user and pw):
-        return _result(False, "Provide site URL, username, and application password.")
+    if not site:
+        return _result(False, "Provide your site URL.")
     if not site.startswith("http"):
         site = "https://" + site
+    method = (vals.get("auth_method") or "app_password").strip()
+    url = f"{site}/wp-json/wp/v2/users/me"
     try:
-        r = requests.get(f"{site}/wp-json/wp/v2/users/me", params={"context": "edit"},
-                         auth=(user, pw), timeout=TIMEOUT)
+        if method == "api_key":
+            key = (vals.get("api_key") or "").strip()
+            if not key:
+                return _result(False, "Add an API key first.")
+            r = requests.get(url, params={"context": "edit"},
+                             headers={"Authorization": f"Bearer {key}"}, timeout=TIMEOUT)
+        else:
+            user = (vals.get("username") or "").strip()
+            pw = (vals.get("app_password") or "").strip()
+            if not (user and pw):
+                return _result(False, "Provide username and application password.")
+            r = requests.get(url, params={"context": "edit"}, auth=(user, pw), timeout=TIMEOUT)
         if r.status_code == 200:
             name = ""
             try:

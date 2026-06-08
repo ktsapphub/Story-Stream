@@ -1,30 +1,18 @@
 [
   {
-    "content": "Backend: create connections.py registry (providers, fields, env fallback, run_test, usage extraction, platform_info)",
+    "content": "Backend: add WordPress auth_method (select) + api_key field; support conditional fields/defaults in connections.py",
     "status": "completed"
   },
   {
-    "content": "Backend: add settings endpoints in server.py (platform, list, save+autotest, test, disconnect)",
+    "content": "Backend: branch _test_wordpress on auth_method (Bearer api_key vs basic app_password)",
     "status": "completed"
   },
   {
-    "content": "Backend: refactor stock.py to accept keys dict; wire server stock endpoints to DB keys",
+    "content": "Frontend: render select field type + conditional (visible_when) fields in ConnectionCard",
     "status": "completed"
   },
   {
-    "content": "Frontend: add api.js client functions for settings",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: build Settings page (platform + connection cards, show/hide secret, test, usage, manual limit)",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: add /settings route + Settings nav item",
-    "status": "completed"
-  },
-  {
-    "content": "Lint + screenshot verify; test backend + frontend with testing agent",
+    "content": "Verify build + test WordPress dual-method via screenshot/curl",
     "status": "completed"
   }
 ]
