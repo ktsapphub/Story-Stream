@@ -793,10 +793,17 @@ async def update_content(content_id: str, req: SaveContentRequest, user: dict = 
     return await db.content.find_one({"id": content_id}, {"_id": 0})
 
 
+class StatusUpdate(BaseModel):
+    status: str
+
+
 @api_router.post("/content/{content_id}/status")
-async def set_status(content_id: str, status: str = Query(...), user: dict = Depends(get_current_user)):
-    await db.content.update_one({"id": content_id, "owner": user["id"]}, {"$set": {"status": status, "updated_at": now_iso()}})
-    return {"ok": True}
+async def set_status(content_id: str, status: Optional[str] = Query(None), body: Optional[StatusUpdate] = None, user: dict = Depends(get_current_user)):
+    new_status = status or (body.status if body else None)
+    if not new_status:
+        raise HTTPException(status_code=422, detail="status is required (query param or JSON body)")
+    await db.content.update_one({"id": content_id, "owner": user["id"]}, {"$set": {"status": new_status, "updated_at": now_iso()}})
+    return {"ok": True, "status": new_status}
 
 
 @api_router.delete("/content/{content_id}")

@@ -25,6 +25,10 @@
   },
   {
     "content": "Lint + build + screenshot + testing agent (both)",
-    "status": "in_progress"
+    "status": "completed"
+  },
+  {
+    "content": "Harden /content/{id}/status endpoint (accept body or query)",
+    "status": "completed"
   }
 ]
