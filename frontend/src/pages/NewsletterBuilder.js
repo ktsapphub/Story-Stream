@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
   ArrowLeft, GripVertical, ArrowUp, ArrowDown, Trash2, Plus, Loader2, Sparkles, Wand2,
-  Save, Download, Image as ImageIcon, Palette, Gauge, Link2, CheckCircle2, LayoutTemplate, Search,
+  Save, Download, Palette, Gauge, Link2, CheckCircle2, LayoutTemplate, Search,
+  ImagePlus, Square, RectangleHorizontal, RectangleVertical, Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -23,6 +24,13 @@ import {
 
 const FONTS = ["Playfair Display", "Montserrat", "Fraunces", "Crimson Text", "Figtree", "Roboto Mono", "Source Code Pro", "Fredoka"];
 const uid = () => Math.random().toString(36).slice(2, 10);
+
+const RATIOS = [
+  { value: "landscape", label: "Landscape", icon: RectangleHorizontal, box: "aspect-video", wrap: "w-full" },
+  { value: "square", label: "Square", icon: Square, box: "aspect-square", wrap: "max-w-[240px] mx-auto" },
+  { value: "portrait", label: "Portrait", icon: RectangleVertical, box: "aspect-[3/4]", wrap: "max-w-[200px] mx-auto" },
+];
+const ratioOf = (v) => RATIOS.find((r) => r.value === v) || RATIOS[0];
 
 const blogMedia = (b) => {
   if (b.header_image?.url) return { type: "image", url: b.header_image.url };
@@ -184,7 +192,8 @@ export default function NewsletterBuilder() {
     setSections((prev) => [...prev, {
       id: uid(), source_blog_id: b.id, title: b.title,
       subheader: b.title, excerpt: b.excerpt || b.meta_description || "",
-      media: blogMedia(b), read_more_url: b.published_url || b.source_url || "", read_more_text: "Read More",
+      media: blogMedia(b), media_ratio: "landscape",
+      read_more_url: b.published_url || b.source_url || "", read_more_text: "Read More",
     }]);
     setAi(null);
   };
@@ -239,7 +248,8 @@ export default function NewsletterBuilder() {
       footer_text: template.footer_text,
       sections: sections.map((s) => ({
         id: s.id, source_blog_id: s.source_blog_id, subheader: s.subheader,
-        excerpt: s.excerpt, media: s.media, read_more_url: s.read_more_url, read_more_text: s.read_more_text,
+        excerpt: s.excerpt, media: s.media, media_ratio: s.media_ratio || "landscape",
+        read_more_url: s.read_more_url, read_more_text: s.read_more_text,
       })),
       ranking: heuristic ? { overall: Math.round(heuristic.overall), readability: Math.round(heuristic.readability), appeal: Math.round(heuristic.appeal) } : null,
     },
@@ -316,26 +326,64 @@ export default function NewsletterBuilder() {
               <div className="flex items-center gap-1">
                 <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0" data-testid={`section-drag-${i}`} />
                 <span className="text-xs font-semibold text-muted-foreground">#{i + 1}</span>
+                <div className="ml-2 flex items-center gap-0.5" data-testid={`section-ratio-${i}`}>
+                  {RATIOS.map((r) => {
+                    const RIcon = r.icon;
+                    const active = (s.media_ratio || "landscape") === r.value;
+                    return (
+                      <Button key={r.value} type="button" variant={active ? "secondary" : "ghost"} size="icon" className="h-7 w-7" title={r.label}
+                        onClick={() => patchSection(s.id, { media_ratio: r.value })} data-testid={`section-ratio-${r.value}-${i}`}>
+                        <RIcon className={`h-3.5 w-3.5 ${active ? "text-primary" : "text-muted-foreground"}`} />
+                      </Button>
+                    );
+                  })}
+                </div>
                 <div className="ml-auto flex items-center gap-0.5">
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => move(i, i - 1)} disabled={i === 0} data-testid={`section-up-${i}`}><ArrowUp className="h-3.5 w-3.5" /></Button>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => move(i, i + 1)} disabled={i === sections.length - 1} data-testid={`section-down-${i}`}><ArrowDown className="h-3.5 w-3.5" /></Button>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeSection(s.id)} data-testid={`section-remove-${i}`}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setSwapFor(s.id)} className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg border border-border bg-secondary" data-testid={`section-media-${i}`}>
-                  {s.media?.url ? <img src={absUrl(s.media.url)} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center text-muted-foreground"><ImageIcon className="h-5 w-5" /></span>}
-                  {s.media?.type === "video" && <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white text-xs">&#9658;</span>}
+
+              {/* Media area — chosen ratio, dotted placeholder when empty */}
+              <div className={ratioOf(s.media_ratio).wrap}>
+                <button type="button" onClick={() => setSwapFor(s.id)} data-testid={`section-media-${i}`}
+                  className={`group relative w-full ${ratioOf(s.media_ratio).box} overflow-hidden rounded-xl flex items-center justify-center transition-colors ${s.media?.url ? "border border-border" : "border-2 border-dashed border-border hover:border-primary bg-secondary/30"}`}>
+                  {s.media?.url ? (
+                    <>
+                      <img src={absUrl(s.media.url)} alt="" className="h-full w-full object-cover" />
+                      {s.media.type === "video" && <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white"><Play className="h-6 w-6" /></span>}
+                      <span className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                        <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-medium flex items-center gap-1"><ImagePlus className="h-4 w-4" /> Swap</span>
+                      </span>
+                    </>
+                  ) : (
+                    <span className="flex flex-col items-center gap-1 text-muted-foreground" data-testid={`section-media-placeholder-${i}`}>
+                      <ImagePlus className="h-6 w-6" />
+                      <span className="text-xs">Add image or video</span>
+                    </span>
+                  )}
                 </button>
-                <Input value={s.subheader} onChange={(e) => patchSection(s.id, { subheader: e.target.value })} className="rounded-xl font-medium" placeholder="Subheader" data-testid={`section-subheader-${i}`} />
               </div>
+
+              <Input value={s.subheader} onChange={(e) => patchSection(s.id, { subheader: e.target.value })} className="rounded-xl font-medium" placeholder="Subheader" data-testid={`section-subheader-${i}`} />
               <Textarea value={s.excerpt} onChange={(e) => patchSection(s.id, { excerpt: e.target.value })} className="rounded-xl min-h-[64px] text-sm" placeholder="Excerpt copy" data-testid={`section-excerpt-${i}`} />
-              <div className="flex items-center gap-2">
-                <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                <Input value={s.read_more_url} onChange={(e) => patchSection(s.id, { read_more_url: e.target.value })} className="rounded-xl text-sm" placeholder="Read More URL (external)" data-testid={`section-url-${i}`} />
-                {(blogById[s.source_blog_id]?.published_url || blogById[s.source_blog_id]?.source_url) && (
-                  <Button variant="outline" size="sm" className="rounded-lg shrink-0" onClick={() => patchSection(s.id, { read_more_url: blogById[s.source_blog_id].published_url || blogById[s.source_blog_id].source_url })}>Use published</Button>
-                )}
+
+              {/* CTA button: label + link (published or manual) */}
+              <div className="rounded-xl border border-border p-2.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground">Call to action</span>
+                  {(blogById[s.source_blog_id]?.published_url || blogById[s.source_blog_id]?.source_url) && (
+                    <Button variant="outline" size="sm" className="h-7 rounded-lg text-xs"
+                      onClick={() => patchSection(s.id, { read_more_url: blogById[s.source_blog_id].published_url || blogById[s.source_blog_id].source_url })}
+                      data-testid={`section-use-published-${i}`}>Use published link</Button>
+                  )}
+                </div>
+                <Input value={s.read_more_text} onChange={(e) => patchSection(s.id, { read_more_text: e.target.value })} className="rounded-lg text-sm" placeholder="Button text (e.g. Read More)" data-testid={`section-cta-text-${i}`} />
+                <div className="relative">
+                  <Link2 className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input value={s.read_more_url} onChange={(e) => patchSection(s.id, { read_more_url: e.target.value })} className="rounded-lg pl-8 text-sm" placeholder="Link to published article or paste a URL" data-testid={`section-url-${i}`} />
+                </div>
               </div>
             </Card>
           ))}
@@ -368,7 +416,18 @@ export default function NewsletterBuilder() {
                 </div>
                 {sections.map((s) => (
                   <div key={s.id} className="py-3" style={{ borderBottom: "1px solid #ece7f7" }}>
-                    {s.media?.url && <img src={absUrl(s.media.url)} alt="" className="w-full rounded-lg mb-2 max-h-32 object-cover" />}
+                    <div className={ratioOf(s.media_ratio).wrap}>
+                      {s.media?.url ? (
+                        <div className={`relative w-full ${ratioOf(s.media_ratio).box} overflow-hidden rounded-lg mb-2`}>
+                          <img src={absUrl(s.media.url)} alt="" className="h-full w-full object-cover" />
+                          {s.media.type === "video" && <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white"><Play className="h-5 w-5" /></span>}
+                        </div>
+                      ) : (
+                        <div className={`w-full ${ratioOf(s.media_ratio).box} mb-2 rounded-lg border-2 border-dashed flex items-center justify-center`} style={{ borderColor: "#d9d2ee" }}>
+                          <ImagePlus className="h-5 w-5" style={{ color: "#b7add6" }} />
+                        </div>
+                      )}
+                    </div>
                     <div style={{ fontFamily: template.heading_font, color: c.accent || "#5b3fd6", fontWeight: 700, fontSize: 15 }}>{s.subheader}</div>
                     <p className="text-xs mt-1" style={{ color: c.text, fontFamily: template.body_font }}>{(s.excerpt || "").slice(0, 160)}</p>
                     {s.read_more_url && <span className="inline-block mt-2 rounded-lg px-3 py-1.5 text-xs font-semibold text-white" style={{ background: c.primary || "#835ef5" }}>{s.read_more_text || "Read More"}</span>}

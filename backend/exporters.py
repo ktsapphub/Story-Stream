@@ -103,13 +103,17 @@ def _render_branded_newsletter_html(content: dict) -> str:
         head = html_lib.escape(sec.get("subheader") or sec.get("heading") or "")
         body = html_lib.escape(sec.get("excerpt") or sec.get("content") or "").replace("\n", "<br/>")
         media = sec.get("media") or {}
+        ratio = sec.get("media_ratio") or "landscape"
+        ar = {"square": "1 / 1", "portrait": "3 / 4", "landscape": "16 / 9"}.get(ratio, "16 / 9")
+        maxw = {"square": "300px", "portrait": "260px", "landscape": "100%"}.get(ratio, "100%")
         media_html = ""
         if media.get("url"):
             murl = html_lib.escape(media["url"])
+            wrap_open = f'<div style="max-width:{maxw};margin:0 auto 4px">'
             if (media.get("type") or "image") == "video":
-                media_html = f'<a href="{murl}" style="display:block"><div style="position:relative;border-radius:12px;overflow:hidden;background:#000"><img src="{murl}" alt="" style="width:100%;display:block;opacity:.85"/><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:34px">&#9658;</span></div></a>'
+                media_html = f'{wrap_open}<a href="{murl}" style="display:block"><div style="position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:{ar}"><img src="{murl}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;opacity:.85"/><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:34px">&#9658;</span></div></a></div>'
             else:
-                media_html = f'<img src="{murl}" alt="" style="width:100%;border-radius:12px;display:block"/>'
+                media_html = f'{wrap_open}<img src="{murl}" alt="" style="width:100%;aspect-ratio:{ar};object-fit:cover;border-radius:12px;display:block"/></div>'
         read_more = ""
         if sec.get("read_more_url"):
             label = html_lib.escape(sec.get("read_more_text") or "Read More")
