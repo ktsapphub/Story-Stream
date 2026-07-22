@@ -18,6 +18,12 @@ const PROVIDER_DOT = { openai: "--accent-openai", anthropic: "--accent-anthropic
 
 const TONES = ["warm and engaging", "playful and fun", "professional", "romantic", "inspirational", "conversational"];
 
+const LENGTHS = [
+  { value: "short", label: "Short", words: "50–500 words", desc: "Social captions, short LinkedIn posts, quick tips, brief announcements, short newsletters" },
+  { value: "medium", label: "Medium", words: "500–1,500 words", desc: "Standard blog posts, guides, opinion pieces, case studies, educational newsletters" },
+  { value: "long", label: "Long", words: "1,500–3,000+ words", desc: "In-depth guides, SEO pillar articles, research-backed posts, detailed comparisons" },
+];
+
 export const PromptComposer = ({
   models = [], defaultModel, loading, onGenerate, kind = "blog",
 }) => {
@@ -127,11 +133,18 @@ export const PromptComposer = ({
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Length</label>
             <Select value={length} onValueChange={setLength}>
-              <SelectTrigger className="rounded-xl" data-testid="prompt-composer-length-select"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="short">Short</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="long">Long</SelectItem>
+              <SelectTrigger className="rounded-xl" data-testid="prompt-composer-length-select">
+                <span className="truncate">{(LENGTHS.find((l) => l.value === length) || LENGTHS[1]).label} <span className="text-muted-foreground">· {(LENGTHS.find((l) => l.value === length) || LENGTHS[1]).words}</span></span>
+              </SelectTrigger>
+              <SelectContent className="max-w-[340px]">
+                {LENGTHS.map((l) => (
+                  <SelectItem key={l.value} value={l.value} textValue={`${l.label} · ${l.words}`}>
+                    <span className="flex flex-col text-left py-0.5">
+                      <span className="font-medium">{l.label} <span className="text-muted-foreground font-normal">· {l.words}</span></span>
+                      <span className="text-xs text-muted-foreground whitespace-normal">{l.desc}</span>
+                    </span>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

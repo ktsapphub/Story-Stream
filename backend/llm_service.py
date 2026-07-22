@@ -111,9 +111,9 @@ Return ONLY a JSON object with EXACTLY these keys:
 No prose outside the JSON."""
 
 LENGTHS = {
-    "short": "300-450 words",
-    "medium": "500-750 words",
-    "long": "900-1300 words",
+    "short": "50-500 words (short-form: quick tips, brief announcements, short newsletters)",
+    "medium": "500-1500 words (medium-form: standard blog posts, guides, opinion pieces)",
+    "long": "1500-3000+ words (long-form: in-depth guides, SEO pillar articles, research-backed posts)",
 }
 
 
