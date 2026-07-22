@@ -101,6 +101,13 @@ export const downloadExport = async (id, format, filename) => {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
+// ---- newsletter builder ----
+export const listTemplates = () => http.get("/newsletter-templates").then((r) => r.data);
+export const createTemplate = (payload) => http.post("/newsletter-templates", payload).then((r) => r.data);
+export const updateTemplate = (id, payload) => http.put(`/newsletter-templates/${id}`, payload).then((r) => r.data);
+export const deleteTemplate = (id) => http.delete(`/newsletter-templates/${id}`).then((r) => r.data);
+export const rankNewsletterOrder = (items) => http.post("/newsletter/rank-order", { items }).then((r) => r.data);
+
 // ---- settings / connections ----
 export const getPlatformInfo = () => http.get("/settings/platform").then((r) => r.data);
 export const getConnections = () => http.get("/settings/connections").then((r) => r.data);

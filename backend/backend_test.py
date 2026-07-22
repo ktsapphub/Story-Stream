@@ -172,6 +172,10 @@ class ContentStudioTester:
         self.log("\n### Testing Media from URL with Source Fields (NEW FEATURE) ###")
         self.test_media_from_url_with_source()
         
+        # Test 17: Newsletter Builder (NEW FEATURE)
+        self.log("\n### Testing Newsletter Builder (NEW FEATURE) ###")
+        self.test_newsletter_builder()
+        
         # Print summary
         self.print_summary()
         
@@ -902,6 +906,213 @@ class ContentStudioTester:
                         self.log(f"  ✅ Source fields correctly stored: source={media_item.get('source')}")
                     else:
                         self.log(f"  ⚠️ Source fields not stored correctly", "WARN")
+    
+    def test_newsletter_builder(self):
+        """Test Newsletter Builder endpoints (NEW FEATURE)"""
+        # Test 1: GET /api/newsletter-templates (should return default + user templates)
+        success, data = self.test(
+            "GET /api/newsletter-templates",
+            "GET", "newsletter-templates", 200,
+            check_response=lambda d: "templates" in d and isinstance(d.get("templates"), list) and len(d.get("templates", [])) > 0
+        )
+        
+        if success:
+            templates = data.get("templates", [])
+            default_tpl = next((t for t in templates if t.get("id") == "default"), None)
+            if default_tpl:
+                self.log(f"  ✅ Default template found: {default_tpl.get('name')}")
+            else:
+                self.log(f"  ⚠️ Default template not found", "WARN")
+        
+        # Test 2: POST /api/newsletter-templates (create new template)
+        template_payload = {
+            "name": "Test Newsletter Template",
+            "brand_name": "Test Brand",
+            "logo_url": "https://example.com/logo.png",
+            "colors": {
+                "primary": "#ff5733",
+                "accent": "#c70039",
+                "background": "#ffffff",
+                "text": "#000000"
+            },
+            "heading_font": "Playfair Display",
+            "body_font": "Montserrat",
+            "footer_text": "Test footer text"
+        }
+        
+        success, data = self.test(
+            "POST /api/newsletter-templates (create)",
+            "POST", "newsletter-templates", 200,
+            data=template_payload,
+            check_response=lambda d: "id" in d and d.get("name") == "Test Newsletter Template"
+        )
+        
+        template_id = None
+        if success and data.get("id"):
+            template_id = data["id"]
+            self.log(f"  ✅ Template created with ID: {template_id}")
+        
+        # Test 3: PUT /api/newsletter-templates/{id} (update template)
+        if template_id:
+            update_payload = {
+                **template_payload,
+                "name": "Updated Test Template",
+                "brand_name": "Updated Brand"
+            }
+            
+            success, data = self.test(
+                f"PUT /api/newsletter-templates/{template_id}",
+                "PUT", f"newsletter-templates/{template_id}", 200,
+                data=update_payload,
+                check_response=lambda d: d.get("name") == "Updated Test Template"
+            )
+            
+            if success:
+                self.log(f"  ✅ Template updated successfully")
+        
+        # Test 4: POST /api/newsletter/rank-order (AI ranking)
+        # First, get some blog posts to use
+        success, blogs = self.test(
+            "GET /api/content?type=blog (for ranking test)",
+            "GET", "content", 200,
+            params={"type": "blog"},
+            check_response=lambda d: isinstance(d, list)
+        )
+        
+        if success and len(blogs) >= 2:
+            # Prepare items for ranking
+            items = []
+            for blog in blogs[:3]:  # Use up to 3 blogs
+                items.append({
+                    "title": blog.get("title", ""),
+                    "excerpt": blog.get("excerpt", "")[:160],
+                    "score": blog.get("quality_score", {}).get("overall_score") if blog.get("quality_score") else None
+                })
+            
+            rank_payload = {
+                "items": items,
+                "model_key": "gemini-2.5-flash"
+            }
+            
+            success, data = self.test(
+                "POST /api/newsletter/rank-order",
+                "POST", "newsletter/rank-order", 200,
+                data=rank_payload,
+                timeout=30,
+                check_response=lambda d: all(k in d for k in ["readability", "appeal", "overall", "suggested_order", "rationale"])
+            )
+            
+            if success:
+                self.log(f"  ✅ Ranking result: overall={data.get('overall')}, readability={data.get('readability')}, appeal={data.get('appeal')}")
+                self.log(f"  Suggested order: {data.get('suggested_order')}")
+                self.log(f"  Rationale: {data.get('rationale', '')[:100]}...")
+                
+                # Validate suggested_order
+                suggested = data.get("suggested_order", [])
+                if len(suggested) == len(items) and all(1 <= x <= len(items) for x in suggested):
+                    self.log(f"  ✅ Suggested order is valid (1-based indices covering all items)")
+                else:
+                    self.log(f"  ⚠️ Suggested order validation failed", "WARN")
+        else:
+            self.log(f"  ⚠️ Not enough blogs for ranking test (need at least 2)", "WARN")
+        
+        # Test 5: POST /api/content (save builder newsletter)
+        if success and len(blogs) >= 2:
+            # Build a newsletter with sections from blogs
+            sections = []
+            for i, blog in enumerate(blogs[:2]):
+                sections.append({
+                    "id": f"sec-{i}",
+                    "source_blog_id": blog.get("id"),
+                    "subheader": blog.get("title", ""),
+                    "excerpt": blog.get("excerpt", "")[:200],
+                    "media": {
+                        "type": "image",
+                        "url": blog.get("header_image", {}).get("url") if blog.get("header_image") else None
+                    },
+                    "read_more_url": f"https://example.com/blog/{blog.get('id')}",
+                    "read_more_text": "Read More"
+                })
+            
+            newsletter_payload = {
+                "type": "newsletter",
+                "title": "Test Builder Newsletter",
+                "excerpt": "A test newsletter built with the builder",
+                "status": "draft",
+                "newsletter": {
+                    "builder": True,
+                    "subject": "Test Builder Newsletter",
+                    "preheader": "This is a test",
+                    "template_id": template_id or "default",
+                    "brand_name": "Test Brand",
+                    "logo_url": "https://example.com/logo.png",
+                    "colors": {
+                        "primary": "#835ef5",
+                        "accent": "#5b3fd6",
+                        "background": "#fffbf6",
+                        "text": "#24170f"
+                    },
+                    "heading_font": "Playfair Display",
+                    "body_font": "Montserrat",
+                    "footer_text": "Test footer",
+                    "sections": sections
+                }
+            }
+            
+            success, data = self.test(
+                "POST /api/content (save builder newsletter)",
+                "POST", "content", 200,
+                data=newsletter_payload,
+                check_response=lambda d: "id" in d and d.get("type") == "newsletter" and d.get("newsletter", {}).get("builder") == True
+            )
+            
+            builder_newsletter_id = None
+            if success and data.get("id"):
+                builder_newsletter_id = data["id"]
+                self.content_ids.append(builder_newsletter_id)
+                self.log(f"  ✅ Builder newsletter saved with ID: {builder_newsletter_id}")
+                
+                # Verify sections were saved
+                saved_sections = data.get("newsletter", {}).get("sections", [])
+                if len(saved_sections) == len(sections):
+                    self.log(f"  ✅ All {len(sections)} sections saved correctly")
+                else:
+                    self.log(f"  ⚠️ Section count mismatch: expected {len(sections)}, got {len(saved_sections)}", "WARN")
+            
+            # Test 6: GET /api/content/{id} (retrieve builder newsletter)
+            if builder_newsletter_id:
+                success, data = self.test(
+                    f"GET /api/content/{builder_newsletter_id}",
+                    "GET", f"content/{builder_newsletter_id}", 200,
+                    check_response=lambda d: d.get("id") == builder_newsletter_id and d.get("newsletter", {}).get("builder") == True
+                )
+                
+                if success:
+                    self.log(f"  ✅ Builder newsletter retrieved successfully")
+            
+            # Test 7: GET /api/export/{id}?format=html (export branded HTML)
+            if builder_newsletter_id:
+                success, _ = self.test(
+                    f"GET /api/export/{builder_newsletter_id}?format=html",
+                    "GET", f"export/{builder_newsletter_id}", 200,
+                    params={"format": "html"},
+                    timeout=20
+                )
+                
+                if success:
+                    self.log(f"  ✅ Builder newsletter exported to HTML successfully")
+                    # Note: We can't easily verify the HTML content contains branding in this test,
+                    # but the 200 status confirms the export worked
+        
+        # Test 8: DELETE /api/newsletter-templates/{id} (cleanup)
+        if template_id:
+            success, data = self.test(
+                f"DELETE /api/newsletter-templates/{template_id}",
+                "DELETE", f"newsletter-templates/{template_id}", 200
+            )
+            
+            if success:
+                self.log(f"  ✅ Template deleted successfully")
     
     def print_summary(self):
         """Print test summary"""

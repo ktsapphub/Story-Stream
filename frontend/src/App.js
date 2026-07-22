@@ -9,6 +9,7 @@ import Signup from "@/pages/Signup";
 import Dashboard from "@/pages/Dashboard";
 import BlogStudio from "@/pages/BlogStudio";
 import NewsletterStudio from "@/pages/NewsletterStudio";
+import NewsletterBuilder from "@/pages/NewsletterBuilder";
 import ContentLibrary from "@/pages/ContentLibrary";
 import MediaLibrary from "@/pages/MediaLibrary";
 import KnowledgeBase from "@/pages/KnowledgeBase";
@@ -46,6 +47,7 @@ function App() {
             <Route path="/blog" element={<Protected><BlogStudio /></Protected>} />
             <Route path="/blog/:id" element={<Protected><BlogStudio /></Protected>} />
             <Route path="/newsletter" element={<Protected><NewsletterStudio /></Protected>} />
+            <Route path="/newsletter/build" element={<Protected><NewsletterBuilder /></Protected>} />
             <Route path="/newsletter/:id" element={<Protected><NewsletterStudio /></Protected>} />
             <Route path="/library" element={<Protected><ContentLibrary /></Protected>} />
             <Route path="/media" element={<Protected><MediaLibrary /></Protected>} />

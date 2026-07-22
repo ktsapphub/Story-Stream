@@ -177,6 +177,21 @@ class ConnectionSave(BaseModel):
     manual_limit: Optional[str] = None
 
 
+class TemplateSave(BaseModel):
+    name: str
+    brand_name: str = ""
+    logo_url: str = ""
+    colors: dict = {}
+    heading_font: str = ""
+    body_font: str = ""
+    footer_text: str = ""
+
+
+class RankOrderRequest(BaseModel):
+    items: List[dict] = []
+    model_key: str = llm.DEFAULT_MODEL
+
+
 class SaveContentRequest(BaseModel):
     id: Optional[str] = None
     type: str = "blog"
@@ -929,6 +944,68 @@ async def stock_search(
         logger.exception("stock search failed")
         raise HTTPException(status_code=502, detail=f"Stock search failed: {e}")
     return {"provider": provider, "kind": kind, "results": results}
+
+
+# ----------------------- Newsletter templates & builder -----------------------
+DEFAULT_TEMPLATE = {
+    "id": "default",
+    "name": "My Date Jar (Default)",
+    "brand_name": "My Date Jar",
+    "logo_url": "",
+    "colors": {"primary": "#835ef5", "accent": "#5b3fd6", "background": "#fffbf6", "text": "#24170f"},
+    "heading_font": "Playfair Display",
+    "body_font": "Montserrat",
+    "footer_text": "You are receiving this because you subscribed to My Date Jar.",
+    "is_default": True,
+}
+
+
+@api_router.get("/newsletter-templates")
+async def list_templates(user: dict = Depends(get_current_user)):
+    docs = await db.newsletter_templates.find({"owner": user["id"], "is_deleted": {"$ne": True}}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return {"templates": [DEFAULT_TEMPLATE] + docs}
+
+
+@api_router.post("/newsletter-templates")
+async def create_template(req: TemplateSave, user: dict = Depends(get_current_user)):
+    doc = {
+        "id": str(uuid.uuid4()),
+        "owner": user["id"],
+        **req.model_dump(),
+        "is_deleted": False,
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+    await db.newsletter_templates.insert_one(dict(doc))
+    return clean(doc)
+
+
+@api_router.put("/newsletter-templates/{template_id}")
+async def update_template(template_id: str, req: TemplateSave, user: dict = Depends(get_current_user)):
+    existing = await db.newsletter_templates.find_one({"id": template_id, "owner": user["id"]})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Template not found")
+    await db.newsletter_templates.update_one({"id": template_id, "owner": user["id"]}, {"$set": {**req.model_dump(), "updated_at": now_iso()}})
+    return await db.newsletter_templates.find_one({"id": template_id}, {"_id": 0})
+
+
+@api_router.delete("/newsletter-templates/{template_id}")
+async def delete_template(template_id: str, user: dict = Depends(get_current_user)):
+    await db.newsletter_templates.update_one({"id": template_id, "owner": user["id"]}, {"$set": {"is_deleted": True}})
+    return {"ok": True}
+
+
+@api_router.post("/newsletter/rank-order")
+async def rank_newsletter_order(req: RankOrderRequest, user: dict = Depends(get_current_user)):
+    items = req.items[:20]
+    if not items:
+        raise HTTPException(status_code=400, detail="Provide at least one section to rank")
+    try:
+        result = await llm.rank_newsletter_order(items, req.model_key)
+    except Exception as e:
+        logger.exception("rank order failed")
+        raise HTTPException(status_code=502, detail=f"Could not analyze order: {e}")
+    return result
 
 
 # ----------------------- Stats -----------------------

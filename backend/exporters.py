@@ -6,20 +6,50 @@ import html as html_lib
 import markdown as md_lib
 
 
+def _tracked_url(url: str, campaign: str = "", cid: str = "") -> str:
+    """Append UTM + click-id tracking params to an external Read More URL."""
+    if not url:
+        return url
+    import urllib.parse
+    params = {"utm_source": "newsletter", "utm_medium": "email"}
+    if campaign:
+        params["utm_campaign"] = campaign
+    if cid:
+        params["cs_cid"] = cid
+    sep = "&" if "?" in url else "?"
+    return url + sep + urllib.parse.urlencode(params)
+
+
+def _campaign_slug(s: str) -> str:
+    return "".join(c if c.isalnum() else "-" for c in (s or "newsletter").lower()).strip("-")[:60] or "newsletter"
+
+
 def content_to_markdown(content: dict) -> str:
     """Return a markdown representation for blog OR newsletter content."""
     title = content.get("title", "Untitled")
     if content.get("type") == "newsletter" and content.get("newsletter"):
         nl = content["newsletter"]
+        brand = nl.get("brand_name") or "My Date Jar"
+        camp = _campaign_slug(nl.get("subject") or brand)
         parts = [f"# {nl.get('subject', title)}\n"]
         if nl.get("preheader"):
             parts.append(f"_{nl['preheader']}_\n")
         for sec in nl.get("sections", []):
-            if sec.get("heading"):
-                parts.append(f"## {sec['heading']}\n")
-            parts.append(f"{sec.get('content', '')}\n")
+            head = sec.get("subheader") or sec.get("heading")
+            if head:
+                parts.append(f"## {head}\n")
+            media = sec.get("media") or {}
+            if media.get("url"):
+                parts.append(f"![]({media['url']})\n")
+            body = sec.get("excerpt") or sec.get("content", "")
+            parts.append(f"{body}\n")
+            if sec.get("read_more_url"):
+                label = sec.get("read_more_text") or "Read More"
+                parts.append(f"[{label}]({_tracked_url(sec['read_more_url'], camp, sec.get('id',''))})\n")
         if nl.get("cta_text"):
             parts.append(f"\n[{nl['cta_text']}]({nl.get('cta_url', '#')})\n")
+        if nl.get("footer_text"):
+            parts.append(f"\n---\n_{nl['footer_text']}_\n")
         return "\n".join(parts)
     # blog
     body = content.get("body_markdown", "")
@@ -50,7 +80,78 @@ def _render_html_body(content: dict) -> str:
     return md_lib.markdown(md, extensions=["extra", "sane_lists"])
 
 
+def _render_branded_newsletter_html(content: dict) -> str:
+    """Rich branded HTML for a builder-composed newsletter."""
+    nl = content.get("newsletter", {}) or {}
+    colors = nl.get("colors") or {}
+    primary = colors.get("primary", "#835ef5")
+    accent = colors.get("accent", "#5b3fd6")
+    bg = colors.get("background", "#fffbf6")
+    text = colors.get("text", "#24170f")
+    hfont = nl.get("heading_font") or "Playfair Display"
+    bfont = nl.get("body_font") or "Montserrat"
+    brand = html_lib.escape(nl.get("brand_name") or "My Date Jar")
+    logo = nl.get("logo_url") or ""
+    subject = html_lib.escape(nl.get("subject") or content.get("title") or "")
+    preheader = html_lib.escape(nl.get("preheader") or "")
+    camp = _campaign_slug(nl.get("subject") or brand)
+
+    logo_html = (f'<img src="{html_lib.escape(logo)}" alt="{brand}" style="max-height:56px;margin:0 auto 10px;display:block"/>'
+                 if logo else "")
+    secs = []
+    for sec in nl.get("sections", []):
+        head = html_lib.escape(sec.get("subheader") or sec.get("heading") or "")
+        body = html_lib.escape(sec.get("excerpt") or sec.get("content") or "").replace("\n", "<br/>")
+        media = sec.get("media") or {}
+        media_html = ""
+        if media.get("url"):
+            murl = html_lib.escape(media["url"])
+            if (media.get("type") or "image") == "video":
+                media_html = f'<a href="{murl}" style="display:block"><div style="position:relative;border-radius:12px;overflow:hidden;background:#000"><img src="{murl}" alt="" style="width:100%;display:block;opacity:.85"/><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:34px">&#9658;</span></div></a>'
+            else:
+                media_html = f'<img src="{murl}" alt="" style="width:100%;border-radius:12px;display:block"/>'
+        read_more = ""
+        if sec.get("read_more_url"):
+            label = html_lib.escape(sec.get("read_more_text") or "Read More")
+            href = html_lib.escape(_tracked_url(sec["read_more_url"], camp, sec.get("id", "")))
+            read_more = (f'<a href="{href}" style="display:inline-block;margin-top:12px;background:{primary};color:#fff;'
+                         f'text-decoration:none;padding:10px 22px;border-radius:10px;font-weight:600">{label}</a>')
+        secs.append(f"""
+    <tr><td style="padding:22px 0;border-bottom:1px solid #ece7f7">
+      {media_html}
+      <h2 style="font-family:'{hfont}',Georgia,serif;color:{accent};font-size:22px;margin:14px 0 8px">{head}</h2>
+      <p style="margin:0;color:{text};font-size:15px;line-height:1.7">{body}</p>
+      {read_more}
+    </td></tr>""")
+    footer = html_lib.escape(nl.get("footer_text") or "")
+    body_cta = ""
+    if nl.get("cta_text"):
+        body_cta = (f'<div style="text-align:center;margin:26px 0"><a href="{html_lib.escape(nl.get("cta_url","#"))}" '
+                    f'style="background:{accent};color:#fff;text-decoration:none;padding:12px 28px;border-radius:12px;font-weight:700">{html_lib.escape(nl["cta_text"])}</a></div>')
+    return f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>{subject}</title></head>
+<body style="margin:0;padding:0;background:{bg};font-family:'{bfont}',Arial,sans-serif">
+<span style="display:none;visibility:hidden;opacity:0;height:0;width:0">{preheader}</span>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{bg};padding:24px 0">
+<tr><td align="center">
+<table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;background:#fff;border-radius:16px;padding:28px 28px;border:1px solid #ece7f7">
+  <tr><td style="text-align:center;border-bottom:2px solid {primary};padding-bottom:16px">
+    {logo_html}
+    <div style="font-family:'{hfont}',Georgia,serif;color:{primary};font-size:26px;font-weight:700">{brand}</div>
+    <div style="color:{text};font-size:15px;margin-top:6px">{subject}</div>
+  </td></tr>
+  {''.join(secs)}
+  <tr><td>{body_cta}</td></tr>
+  <tr><td style="padding-top:18px;text-align:center;color:#8a839c;font-size:12px">{footer}</td></tr>
+</table>
+</td></tr></table>
+</body></html>"""
+
+
 def export_html(content: dict, standalone: bool = True):
+    if content.get("type") == "newsletter" and (content.get("newsletter") or {}).get("builder"):
+        return _render_branded_newsletter_html(content).encode("utf-8"), "text/html", "html"
     inner = _render_html_body(content)
     header_img = ""
     if content.get("header_image") and content["header_image"].get("url"):

@@ -1,18 +1,30 @@
 [
   {
-    "content": "Backend: make username visible in both WP methods with conditional required (required_when); add field_required helper",
+    "content": "Backend: add rank_newsletter_order LLM fn; newsletter_templates CRUD + /newsletter/rank-order endpoints",
     "status": "completed"
   },
   {
-    "content": "Backend: api_key test path uses Basic auth when username present, else Bearer",
+    "content": "Backend: extend exporters (markdown/html) to render branded builder newsletter with sections + tracked Read More",
     "status": "completed"
   },
   {
-    "content": "Frontend: support conditional-required (asterisk/optional) for fields incl. select/secret",
+    "content": "Frontend: api.js client fns (templates, rank-order)",
     "status": "completed"
   },
   {
-    "content": "Verify build + curl test both WP api_key variants",
+    "content": "Frontend: build NewsletterBuilder page (select posts, drag-drop sections, ranking, branded preview, save/export)",
     "status": "completed"
+  },
+  {
+    "content": "Frontend: Template manager (branding: logo upload/url, colors, fonts, footer)",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend: routes + entry points (Newsletter Studio button, nav)",
+    "status": "completed"
+  },
+  {
+    "content": "Lint + build + screenshot + testing agent (both)",
+    "status": "in_progress"
   }
 ]

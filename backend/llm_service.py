@@ -329,3 +329,46 @@ async def describe_topic(name: str, context: str = "") -> str:
         return (data.get("description") or "").strip()
     except Exception:
         return ""
+
+
+async def rank_newsletter_order(items, model_key: str = "gemini-2.5-flash") -> dict:
+    """Rank the CURRENT order of newsletter sections for reader experience.
+    items: list of {title, excerpt, score}. Returns readability/appeal/overall + suggested_order (1-based) + rationale.
+    """
+    listing = "\n".join(
+        f"{i+1}. {it.get('title','')} — {(it.get('excerpt') or '')[:160]} (quality {it.get('score', 'n/a')})"
+        for i, it in enumerate(items)
+    )
+    prompt = (
+        "You are an expert email newsletter editor. Evaluate the CURRENT order of the story sections "
+        "below for overall reader experience (strong hook first, good flow, varied appeal). "
+        "Return ONLY a JSON object with EXACTLY these keys:\n"
+        '{"readability": number 0-100, "appeal": number 0-100, "overall": number 0-100, '
+        '"suggested_order": [array of 1-based indices in the ideal order], '
+        '"rationale": "1-2 sentence explanation"}\n\n'
+        "SECTIONS (current order):\n" + listing
+    )
+    data = await _chat_json(model_key, NL_SYSTEM, prompt)
+    n = len(items)
+    order = data.get("suggested_order") or list(range(1, n + 1))
+    # sanitize order: valid 1-based unique indices covering all items
+    clean = []
+    seen = set()
+    for x in order:
+        try:
+            xi = int(x)
+        except (TypeError, ValueError):
+            continue
+        if 1 <= xi <= n and xi not in seen:
+            seen.add(xi)
+            clean.append(xi)
+    for i in range(1, n + 1):
+        if i not in seen:
+            clean.append(i)
+    return {
+        "readability": data.get("readability", 0),
+        "appeal": data.get("appeal", 0),
+        "overall": data.get("overall", 0),
+        "suggested_order": clean,
+        "rationale": data.get("rationale", ""),
+    }

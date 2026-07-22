@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Save, Download, ArrowLeft, Plus, Trash2, Loader2, FileText, ArrowRight, Mail,
+  Save, Download, ArrowLeft, Plus, Trash2, Loader2, FileText, ArrowRight, Mail, Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PromptComposer } from "@/components/PromptComposer";
@@ -96,9 +96,14 @@ export default function NewsletterStudio() {
   if (!content) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="font-display text-3xl font-semibold">Newsletter Studio</h1>
-          <p className="text-muted-foreground mt-1">Write a newsletter from a prompt, or turn an existing blog post into one.</p>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="font-display text-3xl font-semibold">Newsletter Studio</h1>
+            <p className="text-muted-foreground mt-1">Write a newsletter from a prompt, or turn an existing blog post into one.</p>
+          </div>
+          <Button className="rounded-xl gap-2" onClick={() => navigate("/newsletter/build")} data-testid="open-builder-button">
+            <Layers className="h-4 w-4" /> Roll up multiple posts
+          </Button>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <PromptComposer models={models} defaultModel={defaultModel} loading={loading} onGenerate={handleGenerate} kind="newsletter" />
