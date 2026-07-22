@@ -347,7 +347,7 @@ def _test_zapier(vals):
     if not url:
         return _result(False, "Add a Catch Hook URL first.")
     try:
-        r = requests.post(url, json={"event": "connection_test", "source": "Content Studio"}, timeout=TIMEOUT)
+        r = requests.post(url, json={"event": "connection_test", "source": "Story Stream"}, timeout=TIMEOUT)
         if 200 <= r.status_code < 300:
             return _result(True, "Webhook reachable — test event sent.")
         return _result(False, f"Zapier webhook returned HTTP {r.status_code}.")
@@ -401,8 +401,8 @@ def run_test(provider: str, values: dict) -> dict:
 # ----------------------- Platform / tech stack -----------------------
 def platform_info() -> dict:
     return {
-        "name": "Content Studio",
-        "brand": "My Date Jar",
+        "name": "Story Stream",
+        "brand": "Story Stream",
         "description": "AI-powered blog & newsletter content generation studio.",
         "groups": [
             {

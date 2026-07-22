@@ -42,10 +42,10 @@ const ScoreBar = ({ label, value }) => (
 
 // ---------------- Template manager ----------------
 const emptyTemplate = () => ({
-  name: "", brand_name: "My Date Jar", logo_url: "",
+  name: "", brand_name: "Story Stream", logo_url: "",
   colors: { primary: "#835ef5", accent: "#5b3fd6", background: "#fffbf6", text: "#24170f" },
   heading_font: "Playfair Display", body_font: "Montserrat",
-  footer_text: "You are receiving this because you subscribed to My Date Jar.",
+  footer_text: "You are receiving this because you subscribed to Story Stream.",
 });
 
 const TemplateManager = ({ open, onOpenChange, templates, onChanged }) => {
@@ -158,7 +158,7 @@ export default function NewsletterBuilder() {
   const [showAll, setShowAll] = useState(false);
   const [pickerSearch, setPickerSearch] = useState("");
   const [sections, setSections] = useState([]);
-  const [subject, setSubject] = useState("This week from My Date Jar");
+  const [subject, setSubject] = useState("This week from Story Stream");
   const [preheader, setPreheader] = useState("");
   const [ai, setAi] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -363,7 +363,7 @@ export default function NewsletterBuilder() {
               <div className="rounded-xl bg-white p-4" style={{ border: "1px solid #ece7f7" }}>
                 <div className="text-center pb-3" style={{ borderBottom: `2px solid ${c.primary || "#835ef5"}` }}>
                   {template.logo_url ? <img src={template.logo_url} alt="logo" className="mx-auto mb-2 max-h-10" /> : null}
-                  <div style={{ fontFamily: template.heading_font, color: c.primary || "#835ef5", fontWeight: 700, fontSize: 20 }}>{template.brand_name || "My Date Jar"}</div>
+                  <div style={{ fontFamily: template.heading_font, color: c.primary || "#835ef5", fontWeight: 700, fontSize: 20 }}>{template.brand_name || "Story Stream"}</div>
                   <div className="text-xs mt-1" style={{ color: c.text }}>{subject}</div>
                 </div>
                 {sections.map((s) => (

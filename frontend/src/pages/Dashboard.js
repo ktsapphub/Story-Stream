@@ -37,7 +37,7 @@ export default function Dashboard() {
     <div className="space-y-6 sm:space-y-8">
       {/* Hero band */}
       <div className="warm-band rounded-2xl border border-border p-6 sm:p-8">
-        <Badge variant="secondary" className="rounded-full mb-3">My Date Jar • Content Studio</Badge>
+        <Badge variant="secondary" className="rounded-full mb-3">Story Stream</Badge>
         <h1 className="font-display text-3xl sm:text-4xl font-semibold max-w-2xl">Craft blogs & newsletters your readers will love</h1>
         <p className="mt-2 text-muted-foreground max-w-xl">Generate on-brand content with AI, score its quality, add media, and export anywhere.</p>
         <div className="mt-5 flex flex-wrap gap-2">

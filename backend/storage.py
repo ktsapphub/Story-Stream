@@ -1,4 +1,4 @@
-"""Emergent Object Storage helpers for Content Studio."""
+"""Emergent Object Storage helpers for Story Stream."""
 import os
 import requests
 import logging

@@ -10,7 +10,7 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-APP_NAME = "content_studio_mydatejar"
+APP_NAME = "story_stream"
 
 PROVIDERS = ["pexels", "pixabay", "unsplash"]
 

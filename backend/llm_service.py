@@ -88,7 +88,7 @@ async def _chat_json(model_key: str, system_message: str, prompt: str, retries: 
 
 
 BLOG_SYSTEM = (
-    "You are an expert content strategist and blog writer for My Date Jar, a warm, "
+    "You are an expert content strategist and blog writer for Story Stream, a warm, "
     "playful, premium lifestyle brand about AI-curated date ideas and unforgettable "
     "experiences. Your tone is friendly, inspiring, and delightful. "
     "You ALWAYS respond with a single valid JSON object and nothing else."
@@ -194,7 +194,7 @@ async def score_content(title: str, body: str, model_key: str = DEFAULT_MODEL) -
 
 
 NL_SYSTEM = (
-    "You are an email newsletter editor for My Date Jar, a warm, playful lifestyle brand. "
+    "You are an email newsletter editor for Story Stream, a warm, playful lifestyle brand. "
     "You ALWAYS respond with a single valid JSON object and nothing else."
 )
 NL_FROM_BLOG = """Transform this blog article into a newsletter entry.

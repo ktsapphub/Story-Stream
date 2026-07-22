@@ -35,20 +35,20 @@ export default function Signup() {
     <div className="flex min-h-screen bg-background">
       <div className="relative hidden lg:flex flex-col justify-between auth-band noise p-10 w-[46%]">
         <div className="leading-tight">
-          <div className="font-display text-lg font-semibold">Content Studio</div>
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">My Date Jar</div>
+          <div className="font-display text-lg font-semibold">Story Stream</div>
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">AI Writing Studio</div>
         </div>
         <div className="max-w-sm">
           <h1 className="font-display text-4xl font-semibold leading-tight">Create your workspace.</h1>
-          <p className="mt-3 text-muted-foreground">Generate blogs, newsletters, and exports in one warm, organized studio built for the My Date Jar brand.</p>
+          <p className="mt-3 text-muted-foreground">Generate blogs, newsletters, and exports in one warm, organized studio built for modern storytellers.</p>
         </div>
-        <div className="text-xs text-muted-foreground">© My Date Jar — Content Studio</div>
+        <div className="text-xs text-muted-foreground">© Story Stream</div>
       </div>
 
       <div className="flex flex-1 items-center justify-center p-6">
         <Card className="cs-card w-full max-w-md p-7 sm:p-8">
           <div className="lg:hidden flex items-center gap-2 mb-6">
-            <span className="font-display text-lg font-semibold">Content Studio</span>
+            <span className="font-display text-lg font-semibold">Story Stream</span>
           </div>
           <h2 className="font-display text-2xl font-semibold">Create your account</h2>
           <p className="text-sm text-muted-foreground mt-1">Start generating on-brand content in minutes.</p>
@@ -60,7 +60,7 @@ export default function Signup() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@mydatejar.com" required className="h-11 rounded-xl" data-testid="auth-signup-email-input" />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required className="h-11 rounded-xl" data-testid="auth-signup-email-input" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">

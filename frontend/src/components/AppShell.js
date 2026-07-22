@@ -59,9 +59,12 @@ const NavItems = ({ onClick }) => (
 
 const Brand = () => (
   <div className="flex items-center gap-2.5 px-5 py-5">
+    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-[var(--shadow-sm)]">
+      <Sparkles className="h-4 w-4" />
+    </span>
     <div className="leading-tight">
-      <div className="font-display text-lg font-semibold text-foreground">Content Studio</div>
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">My Date Jar</div>
+      <div className="font-display text-lg font-semibold text-foreground">Story Stream</div>
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">AI Writing Studio</div>
     </div>
   </div>
 );
@@ -121,7 +124,7 @@ export const AppShell = ({ children }) => {
               </SheetContent>
             </Sheet>
           </div>
-          <div className="font-display text-base font-semibold lg:hidden">Content Studio</div>
+          <div className="font-display text-base font-semibold lg:hidden">Story Stream</div>
           <div className="ml-auto flex items-center gap-2">
             <Button variant="secondary" size="sm" className="rounded-xl gap-2 hidden sm:flex" onClick={() => navigate("/blog")} data-testid="topbar-new-blog">
               <PenLine className="h-4 w-4" style={{ color: "hsl(var(--accent-blog))" }} /> Blog

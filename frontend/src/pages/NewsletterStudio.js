@@ -198,7 +198,7 @@ export default function NewsletterStudio() {
             <TabsContent value="preview" className="pt-3">
               <Card className="cs-card p-6">
                 <div className="text-center border-b border-border pb-4 mb-4">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">My Date Jar</div>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Story Stream</div>
                   <h2 className="font-display text-2xl font-semibold mt-1">{nl.subject}</h2>
                   <p className="text-sm text-muted-foreground mt-1">{nl.preheader}</p>
                 </div>

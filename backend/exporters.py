@@ -29,7 +29,7 @@ def content_to_markdown(content: dict) -> str:
     title = content.get("title", "Untitled")
     if content.get("type") == "newsletter" and content.get("newsletter"):
         nl = content["newsletter"]
-        brand = nl.get("brand_name") or "My Date Jar"
+        brand = nl.get("brand_name") or "Story Stream"
         camp = _campaign_slug(nl.get("subject") or brand)
         parts = [f"# {nl.get('subject', title)}\n"]
         if nl.get("preheader"):
@@ -90,7 +90,7 @@ def _render_branded_newsletter_html(content: dict) -> str:
     text = colors.get("text", "#24170f")
     hfont = nl.get("heading_font") or "Playfair Display"
     bfont = nl.get("body_font") or "Montserrat"
-    brand = html_lib.escape(nl.get("brand_name") or "My Date Jar")
+    brand = html_lib.escape(nl.get("brand_name") or "Story Stream")
     logo = nl.get("logo_url") or ""
     subject = html_lib.escape(nl.get("subject") or content.get("title") or "")
     preheader = html_lib.escape(nl.get("preheader") or "")

@@ -200,7 +200,12 @@ export default function BlogStudio() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium truncate">{it.title || it.topic}</div>
-                      <span className={`cs-badge ${itemStatusClass(it.status)} mt-1`}>{it.status}</span>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className={`cs-badge ${itemStatusClass(it.status)}`}>{it.status}</span>
+                        {it.status === "complete" && it.score != null && (
+                          <span className="cs-badge badge-published" data-testid={`batch-score-${it.index}`}>Score {it.score}/100</span>
+                        )}
+                      </div>
                     </div>
                     {it.status === "complete" && (
                       <Button size="sm" variant="secondary" className="rounded-lg" onClick={() => navigate(`/blog/${it.content_id}`)} data-testid={`batch-open-${it.index}`}>Open</Button>

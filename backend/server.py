@@ -33,7 +33,7 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Test1234")
 AUTH_BYPASS = os.environ.get("ENABLE_TEST_BYPASS", "false").lower() == "true"
 BYPASS_TOKEN = "cs-test-bypass"
 
-app = FastAPI(title="Content Studio API")
+app = FastAPI(title="Story Stream API")
 api_router = APIRouter(prefix="/api")
 bearer = HTTPBearer(auto_error=False)
 
@@ -312,12 +312,26 @@ async def logout(user: dict = Depends(get_current_user)):
 # ----------------------- Meta -----------------------
 @api_router.get("/")
 async def root():
-    return {"message": "Content Studio API", "status": "ok"}
+    return {"message": "Story Stream API", "status": "ok"}
 
 
 @api_router.get("/models")
 async def get_models(user: dict = Depends(get_current_user)):
     return {"models": llm.list_models(), "default": llm.DEFAULT_MODEL}
+
+
+AUTO_SCORE_MODEL = "gemini-2.5-flash"
+
+
+async def compute_score(title: str, body: str) -> Optional[dict]:
+    """Auto-score generated content with a fast model. Never raises."""
+    if not body:
+        return None
+    try:
+        return await llm.score_content(title or "", body[:5000], AUTO_SCORE_MODEL)
+    except Exception:
+        logger.exception("auto-score failed")
+        return None
 
 
 # ----------------------- Generation -----------------------
@@ -329,6 +343,7 @@ async def generate_blog(req: GenerateBlogRequest, user: dict = Depends(get_curre
     except Exception as e:
         logger.exception("blog generation failed")
         raise HTTPException(status_code=500, detail=f"Generation failed: {e}")
+    data["quality_score"] = await compute_score(data.get("title"), data.get("body_markdown"))
     doc = make_content_doc(data, "blog", req.model_key, user["id"])
     if req.save:
         await db.content.insert_one(dict(doc))
@@ -349,7 +364,7 @@ async def generate_blog_batch(req: BatchRequest, user: dict = Depends(get_curren
         "total": len(topics),
         "completed": 0,
         "model_key": req.model_key,
-        "items": [{"index": i, "topic": t, "status": "queued", "content_id": None, "title": None, "error": None}
+        "items": [{"index": i, "topic": t, "status": "queued", "content_id": None, "title": None, "score": None, "error": None}
                   for i, t in enumerate(topics)],
         "created_at": now_iso(),
     }
@@ -362,9 +377,15 @@ async def generate_blog_batch(req: BatchRequest, user: dict = Depends(get_curren
             if exc is not None:
                 update = {f"items.{idx}.status": "failed", f"items.{idx}.error": str(exc)[:200]}
             else:
+                result["quality_score"] = await compute_score(result.get("title"), result.get("body_markdown"))
                 doc = make_content_doc(result, "blog", req.model_key, owner)
                 await db.content.insert_one(dict(doc))
-                update = {f"items.{idx}.status": "complete", f"items.{idx}.content_id": doc["id"], f"items.{idx}.title": doc["title"]}
+                update = {
+                    f"items.{idx}.status": "complete",
+                    f"items.{idx}.content_id": doc["id"],
+                    f"items.{idx}.title": doc["title"],
+                    f"items.{idx}.score": (result["quality_score"] or {}).get("overall_score") if result.get("quality_score") else None,
+                }
             await db.jobs.update_one({"id": job_id}, {"$set": update, "$inc": {"completed": 1}})
 
         await db.jobs.update_one({"id": job_id}, {"$set": {f"items.{i}.status": "generating" for i in range(len(topics))}})
@@ -956,13 +977,13 @@ async def stock_search(
 # ----------------------- Newsletter templates & builder -----------------------
 DEFAULT_TEMPLATE = {
     "id": "default",
-    "name": "My Date Jar (Default)",
-    "brand_name": "My Date Jar",
+    "name": "Story Stream (Default)",
+    "brand_name": "Story Stream",
     "logo_url": "",
     "colors": {"primary": "#835ef5", "accent": "#5b3fd6", "background": "#fffbf6", "text": "#24170f"},
     "heading_font": "Playfair Display",
     "body_font": "Montserrat",
-    "footer_text": "You are receiving this because you subscribed to My Date Jar.",
+    "footer_text": "You are receiving this because you subscribed to Story Stream.",
     "is_default": True,
 }
 
@@ -1050,7 +1071,7 @@ async def seed_admin_and_migrate():
         await db.users.insert_one({
             "id": uid, "email": ADMIN_EMAIL,
             "password_hash": auth.hash_password(ADMIN_PASSWORD),
-            "name": "My Date Jar", "role": "admin", "created_at": now_iso(),
+            "name": "Story Stream", "role": "admin", "created_at": now_iso(),
         })
         logger.info("Seed admin user created")
     else:

@@ -319,7 +319,7 @@ export default function Settings() {
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <h2 className="font-display text-xl font-semibold">Platform & Tech Stack</h2>
-            <p className="text-sm text-muted-foreground">{platform?.description || "How Content Studio is built."}</p>
+            <p className="text-sm text-muted-foreground">{platform?.description || "How Story Stream is built."}</p>
           </div>
           {platform?.brand && <Badge variant="secondary" className="rounded-full">{platform.brand}</Badge>}
         </div>
