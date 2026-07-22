@@ -26,6 +26,7 @@ export const PromptComposer = ({
   const [tone, setTone] = useState(TONES[0]);
   const [length, setLength] = useState("medium");
   const [mode, setMode] = useState("single");
+  const [batchSize, setBatchSize] = useState(5);
   const [sources, setSources] = useState([]);
   const [selected, setSelected] = useState([]);
   const [focusTopics, setFocusTopics] = useState([]);
@@ -34,10 +35,11 @@ export const PromptComposer = ({
   useEffect(() => { listKnowledge().then(setSources).catch(() => {}); }, []);
 
   const topics = prompt.split("\n").map((t) => t.trim()).filter(Boolean);
+  const batchCount = Math.min(topics.length, batchSize);
 
   const submit = () => {
     if (mode === "batch" && kind === "blog") {
-      onGenerate({ mode: "batch", topics, model_key: model, tone, length, reference_source_ids: selected, focusTopics });
+      onGenerate({ mode: "batch", topics: topics.slice(0, batchSize), model_key: model, tone, length, reference_source_ids: selected, focusTopics });
     } else {
       onGenerate({ mode: "single", topic: prompt.trim(), model_key: model, tone, length, reference_source_ids: selected, focusTopics });
     }
@@ -79,8 +81,19 @@ export const PromptComposer = ({
       />
 
       {mode === "batch" && (
-        <div className="text-xs text-muted-foreground">
-          {topics.length} topic{topics.length === 1 ? "" : "s"} • up to 10 at a time
+        <div className="flex items-center justify-between gap-3 flex-wrap rounded-xl border border-border bg-[hsl(var(--surface-2))] p-3">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Batch size</label>
+            <Select value={String(batchSize)} onValueChange={(v) => setBatchSize(Number(v))}>
+              <SelectTrigger className="rounded-xl h-9 w-24" data-testid="batch-size-select"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[5, 10, 15, 20].map((n) => <SelectItem key={n} value={String(n)}>{n} posts</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="text-xs text-muted-foreground" data-testid="batch-size-hint">
+            {topics.length} topic{topics.length === 1 ? "" : "s"} entered • generating {batchCount} of up to {batchSize}
+          </div>
         </div>
       )}
 
@@ -154,7 +167,7 @@ export const PromptComposer = ({
 
         <Button onClick={submit} disabled={disabled} className="rounded-xl gap-2" data-testid="prompt-composer-generate-button">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {loading ? "Generating..." : mode === "batch" ? `Generate ${topics.length || ""} posts` : "Generate"}
+          {loading ? "Generating..." : mode === "batch" ? `Generate ${batchCount || ""} posts` : "Generate"}
         </Button>
       </div>
     </Card>

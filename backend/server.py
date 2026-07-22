@@ -337,7 +337,7 @@ async def generate_blog(req: GenerateBlogRequest, user: dict = Depends(get_curre
 
 @api_router.post("/generate/blog/batch")
 async def generate_blog_batch(req: BatchRequest, user: dict = Depends(get_current_user)):
-    topics = [t for t in req.topics if t and t.strip()][:10]
+    topics = [t for t in req.topics if t and t.strip()][:20]
     if not topics:
         raise HTTPException(status_code=400, detail="Provide at least one topic")
     owner = user["id"]
