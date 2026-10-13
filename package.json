@@ -1,0 +1,20 @@
+{
+  "name": "storystream",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "cd frontend && npx --yes yarn@1.22.22 install --non-interactive && CI=false npx --yes yarn@1.22.22 build",
+    "dev": "wrangler dev",
+    "test": "node --test tests/parity/",
+    "golden": "python3 tests/parity/gen_golden.py"
+  },
+  "dependencies": {
+    "marked": "15.0.12",
+    "pdf-lib": "1.17.1",
+    "unpdf": "1.0.6"
+  },
+  "devDependencies": {
+    "wrangler": "4.150.0"
+  }
+}
