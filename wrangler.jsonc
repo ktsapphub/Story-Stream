@@ -1,0 +1,36 @@
+{
+  // One Worker: static frontend (assets) + API under /api.
+  // Secrets are set with `wrangler secret put NAME` (and `--env staging`); see .hub/launch.json.
+  "name": "story-stream",
+  "main": "worker/index.js",
+  "compatibility_date": "2025-09-01",
+  "build": {
+    "command": "cd frontend && npx --yes yarn@1.22.22 install --non-interactive && CI=false npx --yes yarn@1.22.22 build"
+  },
+  "assets": {
+    "directory": "./frontend/build",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "story-stream", "database_id": "REPLACE_WITH_D1_DATABASE_ID", "migrations_dir": "migrations" }
+  ],
+  "r2_buckets": [
+    { "binding": "MEDIA", "bucket_name": "story-stream-media" }
+  ],
+  "routes": [{ "pattern": "storystream.ktsapps.com", "custom_domain": true }],
+  "observability": { "enabled": true },
+  "env": {
+    "staging": {
+      "name": "story-stream-staging",
+      "d1_databases": [
+        { "binding": "DB", "database_name": "story-stream-staging", "database_id": "REPLACE_WITH_STAGING_D1_DATABASE_ID", "migrations_dir": "migrations" }
+      ],
+      "r2_buckets": [
+        { "binding": "MEDIA", "bucket_name": "story-stream-staging-media" }
+      ],
+      "routes": [{ "pattern": "storystream-staging.ktsapps.com", "custom_domain": true }]
+    }
+  }
+}
